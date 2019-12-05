@@ -1,5 +1,5 @@
 .docker:
-  image: gdiener/dind-bash:v1.0.0/devops/docker-images/docker-stable-with-bash:v1.0.3
+  image: gdiener/dind-bash:v1.0.0
   services: [ "docker:dind" ]
 
 build:
