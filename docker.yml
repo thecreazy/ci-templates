@@ -1,5 +1,5 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/templates/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.2/templates/docker.yml'
 
 push:
   only:
