@@ -30,7 +30,7 @@ If you're devops or if you know very well what you're doing, copy the relevant p
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/empty-test.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/empty-test.yml'
 
 stages:
   - test
@@ -40,7 +40,7 @@ stages:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/bucket.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/bucket.yml'
 
 stages:
   - deploy
@@ -55,7 +55,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/serverless-regional.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/serverless-regional.yml'
 
 stages:
   - deploy
@@ -76,7 +76,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/serverless-multiregion.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/serverless-multiregion.yml'
 
 stages:
   - deploy
@@ -113,7 +113,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/endpoint.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/endpoint.yml'
 
 stages:
   - deploy
@@ -127,7 +127,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/terraform.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/terraform.yml'
 
 cache:
   paths:
@@ -143,7 +143,7 @@ stages:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/docker.yml'
 
 stages:
   - build
@@ -157,7 +157,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/kubernetes-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/kubernetes-quality.yml'
 
 stages:
   - build
@@ -183,7 +183,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/kubernetes-regional.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/kubernetes-regional.yml'
 
 stages:
   - build
@@ -217,7 +217,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/kubernetes-multiregion.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/kubernetes-multiregion.yml'
 
 stages:
   - build
@@ -267,7 +267,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/kubernetes-task.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/kubernetes-task.yml'
 
 stages:
   - deploy

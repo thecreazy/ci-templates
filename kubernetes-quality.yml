@@ -1,6 +1,6 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/templates/kubernetes.yml'
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/templates/kubernetes.yml'
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.1/docker.yml'
 
 deploy:quality:image:
   variables:
