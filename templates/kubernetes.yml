@@ -1,0 +1,374 @@
+.deploy:image:
+  image: gdiener/ci-image-gcp:v1.0.0
+  stage: deploy
+  script:
+    - &connection |
+      # CLUSTER CONNECTION PHASE
+
+      for var in "GOOGLE_KEY" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "GOOGLE_PROJECT"; do
+          if [ -z "${!var}" ]; then
+            echo
+            echo "-> [WARNING] Missing '${var}' variable!"
+            echo
+            exit 1
+          fi
+      done
+
+      echo "${GOOGLE_KEY}" > /tmp/key.json
+
+      gcloud auth activate-service-account --key-file /tmp/key.json
+
+      gcloud config set project "${GOOGLE_PROJECT}"
+
+      echo
+      echo "-> Google project '${GOOGLE_PROJECT}' configured!"
+      echo
+
+      gcloud container clusters get-credentials --zone "${CLUSTER_ZONE}" "${CLUSTER_NAME}"
+
+      kubectl config set-context $(kubectl config current-context) --namespace="${NAMESPACE}"
+
+      echo
+      echo "-> Namespace '$(kubectl config view --minify --output jsonpath={..namespace})' configured!"
+      echo
+      kubectl cluster-info
+      echo
+
+    - &prerollout |
+      # PREROLLOUT PHASE
+
+      if [ -n "${ROLLOUT_RESOURCES}" ]; then
+        if [ -z "${MAIN_RESOURCES}" ]; then
+          MAIN_RESOURCES=${ROLLOUT_RESOURCES}
+        fi
+        if [ -z "${PRE_ROLLOUT_TIMEOUT}" ]; then
+          PRE_ROLLOUT_TIMEOUT=30m
+        fi
+
+        for resource in ${ROLLOUT_RESOURCES}; do
+          echo
+          echo "-> Pre rollout check with '${PRE_ROLLOUT_TIMEOUT}' timeout on '${resource}' resource!"
+          echo
+
+          kubectl rollout status --timeout=${PRE_ROLLOUT_TIMEOUT} ${resource} && echo "Previous '${resource}' rollout completed with success!" || echo "Previous '${resource}' rollout completed with error!"
+        done
+      fi
+    - |
+      # DEPLOY IMAGE PHASE
+
+      validate() { echo "$1" | grep -F -q -w "$2"; }
+
+      if [ -z "${MAIN_RESOURCES}" ]; then
+        echo
+        echo "-> [WARNING] Missing 'MAIN_RESOURCES' variable!"
+        echo
+        exit 1
+      fi
+
+      if [ -n "${SECRET_YAML}" ]; then
+        touch /tmp/secrets.yaml
+
+        echo "${SECRET_YAML}" | base64 -d > /tmp/secrets.yaml
+        envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
+
+        kubectl apply -f /tmp/secrets.yaml
+
+        echo
+        echo "-> Secrets deployed!"
+        echo
+      else
+        echo
+        echo "-> Missing 'SECRET_YAML' variable!"
+        echo
+      fi
+
+      if [ -n "${BEFORE_CUSTOM_APPLY_FILE_PATH}" ] && [ -r "${BEFORE_CUSTOM_APPLY_FILE_PATH}" ]; then
+
+        cat "${BEFORE_CUSTOM_APPLY_FILE_PATH}"
+
+        kubectl apply -f "${BEFORE_CUSTOM_APPLY_FILE_PATH}"
+
+        echo
+        echo "-> Custom apply deployed on before hook!"
+        echo
+      else
+        echo
+        echo "-> Missing 'BEFORE_CUSTOM_APPLY_FILE_PATH' variable!"
+        echo
+      fi
+
+      if [ -z "${ALL_RESOURCES}" ]; then
+        ALL_RESOURCES=0
+      fi
+
+      if [ -z "${CONTAINERS_NAME_JSON_PATH}" ]; then
+        CONTAINERS_NAME_JSON_PATH="{$.spec.template.spec.containers }"
+      fi
+
+      for resource in ${MAIN_RESOURCES}; do
+        echo
+        echo "-> Deploying image with tag '${CI_COMMIT_TAG}' on '${resource}':"
+        echo
+
+        COMMAND_TO_RUN=( kubectl set image ${resource} )
+
+        if [ "${ALL_RESOURCES}" == 1 ]; then
+          COMMAND_TO_RUN+=( --all )
+        fi
+
+        CONTAINERS_NAME=$(kubectl get "${resource}" -o=jsonpath=\'"${CONTAINERS_NAME_JSON_PATH}"\')
+
+        if [ -z "${IMAGES}" ]; then
+          if validate "${CONTAINERS_NAME}" "app"; then
+            COMMAND_TO_RUN+=( app="${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}" )
+          else
+            echo
+            echo "-> [WARNING] Missing 'app' container on '${resource}' resource!"
+            echo
+          fi
+        else
+          for image in ${IMAGES}; do
+            if validate "${CONTAINERS_NAME}" "${image}"; then
+              COMMAND_TO_RUN+=( ${image}="${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_TAG}" )
+            else
+              echo
+              echo "-> [WARNING] Missing '${image}' container on '${resource}' resource!"
+              echo
+            fi
+          done
+        fi
+
+        ${COMMAND_TO_RUN[@]}
+
+        echo
+        echo "-> Image deployed for '${resource}'!"
+        echo
+
+        if [ -n "${AFTER_CUSTOM_APPLY_FILE_PATH}" ] && [ -r "${AFTER_CUSTOM_APPLY_FILE_PATH}" ]; then
+
+          cat "${AFTER_CUSTOM_APPLY_FILE_PATH}"
+
+          kubectl apply -f "${AFTER_CUSTOM_APPLY_FILE_PATH}"
+
+          echo
+          echo "-> Custom apply deployed on after hook!"
+          echo
+        else
+          echo
+          echo "-> Missing 'AFTER_CUSTOM_APPLY_FILE_PATH' variable!"
+          echo
+        fi
+
+      done
+    - &rollout |
+      # ROLLOUT PHASE
+
+      if [ -n "${ROLLOUT_RESOURCES}" ]; then
+        if [ -z "${ROLLOUT_TIMEOUT}" ]; then
+          ROLLOUT_TIMEOUT=30m
+        fi
+
+        for resource in ${ROLLOUT_RESOURCES}; do
+          echo
+          echo "-> Rollout check with '${ROLLOUT_TIMEOUT}' timeout on '${resource}' resource!"
+          echo
+
+          STATUS=0
+
+          kubectl rollout status --timeout=${ROLLOUT_TIMEOUT} ${resource} || STATUS=1
+
+          echo
+          echo "-> Rollout describe:"
+          echo
+
+          kubectl describe ${resource}
+
+          if [ ${STATUS} == 1 ]; then
+            echo
+            echo "-> Deploy failed on ${ENVIRONMENT} for '${resource}' resource!"
+            echo
+
+            exit 1
+          fi
+        done
+      fi
+
+      echo
+      echo "-> Deploy on ${ENVIRONMENT}: '${DOMAIN}' completed!"
+      echo
+
+.deploy:manifest:
+  image: gdiener/ci-image-gcp:v1.0.0
+  stage: manifest
+  script:
+    - *connection
+    - *prerollout
+    - |
+      # DEPLOY MANIFESTS PHASE
+
+      if [ -n "${SECRET_YAML}" ]; then
+        touch /tmp/secrets.yaml
+
+        echo "${SECRET_YAML}" | base64 -d > /tmp/secrets.yaml
+        envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
+
+        kubectl apply -f /tmp/secrets.yaml
+
+        echo
+        echo "-> Secrets deployed!"
+        echo
+      else
+        echo
+        echo "-> Missing 'SECRET_YAML' variable!"
+        echo
+      fi
+
+      if [ -z "${ENVIRONMENT}" ]; then
+        ENVIRONMENT=production
+      fi
+
+      if [ -z "${KUBERNETES_DIR}" ]; then
+        KUBERNETES_DIR=kube
+      fi
+
+      touch /tmp/manifests.yaml
+
+      for f in $(find ${KUBERNETES_DIR} -regex '.*\.ya*ml' -maxdepth 1); do
+        envsubst < $f >> /tmp/manifests.yaml
+        echo >> /tmp/manifests.yaml
+        echo "---" >> /tmp/manifests.yaml
+      done
+
+      if [ -d "${KUBERNETES_DIR}/${ENVIRONMENT}" ]; then
+        echo
+        echo "-> Getting manifests from directory '${ENVIRONMENT}'"
+        echo
+        for f in $(find ${KUBERNETES_DIR}/${ENVIRONMENT} -regex '.*\.ya*ml'); do
+          envsubst < $f >> /tmp/manifests.yaml
+          echo >> /tmp/manifests.yaml
+          echo "---" >> /tmp/manifests.yaml
+        done
+      fi
+
+      if [ -n "${ENVIRONMENT_PATH}" ] && [ "${ENVIRONMENT_PATH}" != "${ENVIRONMENT}" ]; then
+        if [ -d "${KUBERNETES_DIR}/${ENVIRONMENT_PATH}" ]; then
+          echo
+          echo "-> Getting manifests from directory '${ENVIRONMENT_PATH}'"
+          echo
+          for f in $(find ${KUBERNETES_DIR}/${ENVIRONMENT_PATH} -regex '.*\.ya*ml'); do
+            envsubst < $f >> /tmp/manifests.yaml
+            echo >> /tmp/manifests.yaml
+            echo "---" >> /tmp/manifests.yaml
+          done
+        else
+          echo
+          echo "-> [WARNING] Enviroment directory in '${ENVIRONMENT_PATH}' doesn't exist!"
+          echo
+        fi
+      fi
+
+      echo
+      echo "-> Deploying manifests '${CI_COMMIT_TAG}':"
+      echo
+
+      cat /tmp/manifests.yaml
+
+      kubectl apply -f /tmp/manifests.yaml
+
+      echo
+      echo "-> Manifests deployed!"
+      echo
+
+      rm /tmp/manifests.yaml
+    - *rollout
+
+deploy:quality:image:
+  extends: .deploy:image
+  only:
+    - master
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+
+deploy:quality:manifest:
+  extends: .deploy:manifest
+  only:
+    - master
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+
+.deploy:production:image:
+  extends: .deploy:image
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+
+.deploy:production:manifest:
+  extends: .deploy:manifest
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+
+.rollback:
+  image: gdiener/ci-image-gcp:v1.0.0
+  script:
+    - *connection
+    - |
+      # ROLLBACK PHASE
+      if [ -z "${ROLLOUT_RESOURCES}" ]; then
+        echo "Missing 'ROLLOUT_RESOURCES' variable!"
+        exit 1
+      fi
+
+      STATUS=0
+
+      for resource in ${ROLLOUT_RESOURCES}; do
+
+        CURRENT_TAG=$(kubectl get "${resource}" -o=jsonpath='{$.spec.template.spec.containers[:1].image}' | cut -d ":" -f 2)
+
+        if [ "${CI_COMMIT_TAG}" != "${CURRENT_TAG}" ]; then
+          echo
+          echo "-> [WARNING] Can't rollback, image with '${CI_COMMIT_TAG}' tag isn't deployed, current tag is '${CURRENT_TAG}'!"
+          continue
+        fi
+
+        echo
+        echo "-> Rollback image with '${CI_COMMIT_TAG}' tag, current deployed tag is '${CURRENT_TAG}'!"
+        echo
+
+        if [ -z "${ROLLOUT_TIMEOUT}" ]; then
+          ROLLOUT_TIMEOUT=30m
+        fi
+
+        kubectl rollout undo ${resource}
+        kubectl rollout status --timeout=${ROLLOUT_TIMEOUT} ${resource} || STATUS=1
+
+        echo
+        echo "-> Rollout describe:"
+        echo
+
+        kubectl describe ${resource}
+
+        CURRENT_TAG=$(kubectl get "${resource}" -o=jsonpath='{$.spec.template.spec.containers[:1].image}' | cut -d ":" -f 2)
+
+        if [ ${STATUS} == 1 ]; then
+          echo
+          echo "-> [WARNING] Rollback failed on ${ENVIRONMENT} for '${resource}' resource, current deployed tag is '${CURRENT_TAG}'!"
+          echo
+        else
+          echo
+          echo "-> Rollback on ${ENVIRONMENT} for '${resource}' resource completed, current deployed tag is '${CURRENT_TAG}'!"
+          echo
+        fi
+      done
+
+      exit ${STATUS}

@@ -1,0 +1,40 @@
+image:
+  name: hashicorp/terraform:0.12.9
+  entrypoint:
+    - '/usr/bin/bash'
+
+validate:
+  stage: validate
+  script:
+    - &init |
+      terraform --version
+      terraform init
+    - terraform validate
+  only:
+    - tags
+
+
+plan:
+  stage: build
+  script:
+    - *init
+    - terraform plan -out=plan.tfplan
+  artifacts:
+    name: plan
+    paths:
+      - plan.tfplan
+  only:
+    - tags
+
+apply:
+  stage: deploy
+  script:
+    - *init
+    - terraform apply -input=false plan.tfplan
+  dependencies:
+    - plan
+  when: manual
+  only:
+    - tags
+  environment:
+    name: production

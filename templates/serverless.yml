@@ -1,0 +1,123 @@
+.serverless:deploy:
+  image: gdiener/ci-image-gcp:v1.0.0
+  stage: deploy
+  script:
+    - &connection |
+      # CLUSTER CONNECTION PHASE
+      for var in "GOOGLE_KEY" "FUNCTION_NAME" "RUNTIME" "REGION" "GOOGLE_PROJECT"; do
+          if [ -z "${!var}" ]; then
+            echo
+            echo "-> [WARNING] Missing '${var}' variable!"
+            echo
+            exit 1
+          fi
+      done
+      echo "${GOOGLE_KEY}" > /tmp/key.json
+
+      gcloud config set project ${GOOGLE_PROJECT}
+
+      echo "Google project '${GOOGLE_PROJECT}' configured"
+      gcloud auth activate-service-account --key-file /tmp/key.json
+    - |
+      # DEPLOY PHASE
+      echo
+      echo "-> Deploying function '${FUNCTION_NAME}' with tag '${CI_COMMIT_TAG}'"
+      echo
+
+      COMMAND_TO_RUN=( gcloud functions deploy ${FUNCTION_NAME} --runtime=${RUNTIME} )
+
+      echo
+      echo "-> Setting '${REGION}' region!"
+      echo
+
+      COMMAND_TO_RUN+=( --region=${REGION} )
+
+      if [ -n "${MEMORY}" ]; then
+        echo
+        echo "-> Setting '${MEMORY}' memory limit!"
+        echo
+
+        COMMAND_TO_RUN+=( --memory=${MEMORY} )
+      fi
+
+      if [ -n "${TIMEOUT}" ]; then
+        echo
+        echo "-> Setting '${TIMEOUT}' timeout limit!"
+        echo
+
+        COMMAND_TO_RUN+=( --timeout=${TIMEOUT} )
+      fi
+
+      if [ -n "${SECRET_YAML}" ]; then
+        touch /tmp/secrets.yaml
+
+        echo
+        echo "-> Setting secret yaml!"
+        echo
+
+        echo "${SECRET_YAML}" | base64 -d > /tmp/secrets.yaml
+
+        COMMAND_TO_RUN+=( --env-vars-file=/tmp/secrets.yaml )
+
+      fi
+
+      if [ -n "${SECRET_ENV_LIST}" ]; then
+        echo
+        echo "-> Setting env list!"
+        echo
+
+        COMMAND_TO_RUN+=( --set-env-vars=${SECRET_ENV_LIST} )
+      fi
+
+      if [ -n "${ENTRYPOINT}" ]; then
+        echo
+        echo "-> Setting entrypoint!"
+        echo
+
+        COMMAND_TO_RUN+=( --entry-point=${ENTRYPOINT} )
+      fi
+
+      if [ -n "${MAX_INSTANCES}" ]; then
+        echo
+        echo "-> Setting '${MAX_INSTANCES}' max instances!"
+        echo
+
+        COMMAND_TO_RUN+=( --max-instances=${MAX_INSTANCES} )
+      fi
+
+      if [ -n "${TRIGGER_TOPIC}" ]; then
+        echo
+        echo "-> Setting trigger topic!"
+        echo
+
+        COMMAND_TO_RUN+=( --trigger-topic=${TRIGGER_TOPIC} )
+      fi
+
+      if [ -n "${TRIGGER_HTTP}" ]; then
+        echo
+        echo "-> Setting http!"
+        echo
+
+        COMMAND_TO_RUN+=( --trigger-http )
+      fi
+
+      STATUS=0
+
+      ${COMMAND_TO_RUN[@]} || STATUS=1
+
+      if [ "$STATUS" == 1 ]; then
+        gcloud functions describe --region=${REGION} ${FUNCTION_NAME}
+      fi
+
+      exit $STATUS
+
+      echo
+      echo "-> Deploy on ${ENVIRONMENT}: '${DOMAIN}' completed!"
+      echo
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT}
+    url: https://${DOMAIN}

@@ -1,0 +1,7 @@
+include:
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/templates/serverless.yml'
+
+deploy:production:
+  extends: .serverless:deploy
+  variables:
+    ENVIRONMENT: production

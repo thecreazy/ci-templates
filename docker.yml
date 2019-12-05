@@ -1,0 +1,8 @@
+include:
+  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.0/templates/docker.yml'
+
+push:
+  only:
+    - /^v.+$/i
+  except:
+    - branches
