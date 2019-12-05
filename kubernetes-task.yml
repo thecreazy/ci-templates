@@ -1,5 +1,5 @@
 .exec:task:
-  image: gdiener/ci-image-gcp:v1.0.0
+  image: gdiener/ci-image-gcp:v1.0.1
   stage: deploy
   script:
     - |

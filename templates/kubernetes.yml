@@ -1,5 +1,5 @@
 .deploy:image:
-  image: gdiener/ci-image-gcp:v1.0.0
+  image: gdiener/ci-image-gcp:v1.0.1
   stage: deploy
   script:
     - &connection |
@@ -198,7 +198,7 @@
       echo
 
 .deploy:manifest:
-  image: gdiener/ci-image-gcp:v1.0.0
+  image: gdiener/ci-image-gcp:v1.0.1
   stage: manifest
   script:
     - *connection
@@ -319,7 +319,7 @@ deploy:quality:manifest:
     url: https://${DOMAIN}
 
 .rollback:
-  image: gdiener/ci-image-gcp:v1.0.0
+  image: gdiener/ci-image-gcp:v1.0.1
   script:
     - *connection
     - |
