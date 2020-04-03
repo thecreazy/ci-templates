@@ -1,0 +1,11 @@
+include:
+  - 'bucket-quality.yml'
+
+deploy:production:
+  extends: .deploy
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
+    BUCKET_NAME: ${BUCKET_NAME_PRODUCTION}
+    BUCKET_HEADERS: ${BUCKET_HEADERS_PRODUCTION}
+  only:
+      - /^v.+$/i

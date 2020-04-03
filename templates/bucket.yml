@@ -1,0 +1,59 @@
+.deploy:
+  image: gdiener/ci-image-gcp:v1.0.1
+  stage: deploy
+  script:
+    - &connection |
+      # CONNECTION PHASE
+
+      for var in "GOOGLE_KEY" "BUCKET_NAME" "GOOGLE_PROJECT" ; do
+          if [ -z "${!var}" ]; then
+            echo
+            echo "-> [WARNING] Missing '${var}' variable!"
+            echo
+            exit 1
+          fi
+      done
+
+      echo "${GOOGLE_KEY}" > /tmp/key.json
+
+      gcloud config set project "${GOOGLE_PROJECT}"
+
+      gcloud auth activate-service-account --key-file /tmp/key.json
+    - |
+      # SYNCHRONIZING FILES IN THE BUCKET
+
+      COMMAND_TO_RUN=( gsutil -m )
+
+      if [ -z "${DIR_TO_SYNC}" ]; then
+        DIR_TO_SYNC="."
+      fi
+
+      if [ -n "${BUCKET_HEADERS}" ]; then
+        echo
+        echo "-> Setting '${BUCKET_HEADERS}' headers!"
+        echo
+
+        COMMAND_TO_RUN+=( -h "${BUCKET_HEADERS}" )
+      fi
+
+      if [ "${SYNC_MODE}" = "copy" ]; then
+        COMMAND_TO_RUN+=( cp )
+        MESSAGE=uploaded
+      else
+        COMMAND_TO_RUN+=( rsync )
+        MESSAGE=synchronized
+      fi
+
+      if [ -z "${BUCKET_PATH+x}" ]; then
+        BUCKET_PATH=data
+      fi
+
+      COMMAND_TO_RUN+=( -d -J -r "${DIR_TO_SYNC}" "gs://${BUCKET_NAME}/${BUCKET_PATH}" )
+
+      "${COMMAND_TO_RUN[@]}"
+
+      echo
+      echo "-> File ${MESSAGE} to '${BUCKET_NAME}'!"
+      echo
+  variables:
+    GIT_DEPTH: 1
