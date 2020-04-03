@@ -1,0 +1,19 @@
+lint:yaml:
+  stage: lint
+  image: cytopia/yamllint:1.18
+  script:
+    - |
+
+      if [[ -z "${YAML_DIR}" ]]; then
+        YAML_DIR="kube/"
+      fi
+
+      echo
+      echo "-> Linting manifests:"
+      echo
+
+      yamllint ${YAML_DIR}
+
+      echo
+      echo "-> Manifests checked!"
+      echo

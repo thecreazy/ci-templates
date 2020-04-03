@@ -1,0 +1,40 @@
+lint:docker:
+  stage: lint
+  image: hadolint/hadolint:v1.17.5-debian
+  script:
+    - |
+
+      COMMAND_TO_RUN="hadolint"
+      COMMAND_TO_RUN+=( --trusted-registry registry.my-company.io )
+
+      if [[ -n "${IGNORE_DOCKER_LINT}" ]]; then
+        IGNORE_DOCKER_LINT=( DL3012 )
+      fi
+      for ign in "${IGNORE_DOCKER_LINT[@]}"; do
+        COMMAND_TO_RUN+=( --ignore "${ign}" )
+      done
+
+      FINAL_COMMAND=${COMMAND_TO_RUN}
+
+      if [[ -f "Dockerfile" ]]; then
+        FINAL_COMMAND+=( ./Dockerfile )
+      else
+        FINAL_COMMAND+=( ./docker/app/Dockerfile )
+        EXTRA_COMMAND+=( ${COMMAND_TO_RUN} ./docker/nginx/Dockerfile )
+      fi
+
+      echo
+      echo "-> Linting Dockerfile:"
+      echo
+
+      "${FINAL_COMMAND[@]}"
+      if [[ ! -z "${EXTRA_COMMAND}" ]]; then
+        echo
+        echo "-> Linting support Dockerfile:"
+        echo
+        "${EXTRA_COMMAND[@]}"
+      else
+
+      echo
+      echo "-> Dockerfile(s) checked!"
+      echo
