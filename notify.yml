@@ -1,0 +1,100 @@
+publish:calendar:
+  image: linuxbandit/gam:v4.97
+  stage: notify
+  script:
+    - |
+      for var in "OAUTH2SERVICE" "OAUTH2TXT" "CLIENTSECRETS" "GOOGLE_CALENDAR_ID"; do
+          if [ -z "${!var}" ]; then
+            echo
+            echo "-> [WARNING] Missing '${var}' variable!"
+            echo
+            exit 1
+          fi
+      done
+      echo "${OAUTH2SERVICE}" > /gam/src/oauth2service.json
+      echo "${OAUTH2TXT}" > /gam/src/oauth2.txt
+      echo "${CLIENTSECRETS}" > /gam/src/client_secrets.json
+
+    - |
+      MESSAGE=$(git tag -l ${CI_COMMIT_TAG} --format='%(subject)')
+      echo "${MESSAGE}" | sed 's/\"/\\\"/g' > /tmp/msg.txt
+      echo "[D]eploy \nPipeline triggered by ${GITLAB_USER_LOGIN} \n\n$(cat /tmp/msg.txt) \n \nMore info: ${CI_PIPELINE_URL}" > description.txt
+      NOW=$(date +%s)
+      END=$(( NOW + 900 ))
+
+    - /usr/bin/gam.sh calendar "${GOOGLE_CALENDAR_ID}" addevent start "$(date +%Y-%m-%dT%H:%M:%S)+0000" end "$(date -d @${END} +%Y-%m-%dT%H:%M:%S)+0000" summary "[D] ${CI_PROJECT_NAME} ${CI_COMMIT_TAG}"  colorindex "7" description "$(cat description.txt)"
+
+  when: on_success
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+
+
+publish:slack:
+  image: gdiener/ci-image-gcp:v1.0.1
+  stage: notify
+  script:
+    - |
+      if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+        echo
+        echo "-> [WARNING] Missing 'SLACK_WEBHOOK_URL' variable!"
+        echo
+        exit 1
+      fi
+
+      if [ -z "${SLACK_ICON}" ]; then
+        PICTURE="\"icon_url\": \"https://img.icons8.com/color/2x/gitlab.png\""
+      else
+        PICTURE="\"icon_emoji\": \":shipit:\""
+      fi
+
+      if [ -z "${SLACK_USERNAME}" ]; then
+        SLACK_USERNAME="CI notifier"
+      fi
+
+      MESSAGE=$(git tag -l "${CI_COMMIT_TAG}" --format='%(subject)')
+      echo "${MESSAGE}" | sed 's/\"/\\\"/g' > /tmp/msg.txt
+
+      cat <<EOF > /tmp/attachment.txt
+      {
+        "color": "#37FDFC",
+        "author_name": "${GITLAB_USER_LOGIN}",
+        "title": "${CI_PROJECT_NAME} ${CI_COMMIT_TAG}",
+        "title_link": "${CI_PIPELINE_URL}",
+        "text": "$(cat /tmp/msg.txt)",
+        "fields": [
+          {
+            "title": "Completed at:",
+            "value": "$(date +"%d %b %H:%M %Z")",
+            "short": "false"
+          }
+        ],
+        "footer": "My-company pipeline",
+        "footer_icon": "https://example.com/images/favicon.png",
+        "fallback": "Deployment of ${CI_PROJECT_NAME} ${CI_COMMIT_TAG} completed\n \nMore info: <${CI_PIPELINE_URL}|${CI_PIPELINE_URL}>"
+      }
+      EOF
+
+      ATTACHMENT=" \"attachments\": [$(cat /tmp/attachment.txt)]"
+
+      PAYLOAD="payload={${ATTACHMENT}, ${PICTURE}, \"username\": \"${SLACK_USERNAME}\" }"
+
+      STATUS_CODE=$(curl -sS -o /tmp/respose.txt --write-out "%{http_code}" -X POST --data-urlencode "${PAYLOAD}" "${SLACK_WEBHOOK_URL}")
+      if [[ "${STATUS_CODE}" -ne 200 ]] ; then
+        echo "Slack webhook return '${STATUS_CODE}' error!"
+        echo
+        echo "Response:"
+        cat /tmp/respose.txt
+        echo
+        echo "Payload: ${PAYLOAD}"
+        exit 1
+      fi
+
+      echo "Message sent to Slack!"
+
+  when: on_success
+  only:
+    - /^v.+$/i
+  except:
+    - branches
