@@ -6,7 +6,7 @@ The syntax here is valid for a Gitlab CI setup. Our current version of Gitlab is
 
 At Jobtome, we use GCP as our Cloud provider, hence you can imagine a lot of pipelines are related/applicable to GCP. Also, we use three main regions for our services, so you will see a lot of references about that distinction.
 
-We manage our GCP infrastructure through Terraform, thus you can find also terraform-related pipeline files. Have a look at our [tf gcp modules](https://github.com/jobtome-labs/terraform-modules), too, if you also manage GCP through Terraform!
+We manage our GCP infrastructure through Terraform, thus you can find also terraform-related pipeline files. Have a look at our [tf GCP modules](https://github.com/jobtome-labs/terraform-modules), too, if you also manage GCP through Terraform!
 
 ## Pipeline order and workflow
 
@@ -99,6 +99,7 @@ According to the operation / the type of pipeline you have to perform, you can p
 - [Google cloud run](#google-cloud-run)
 - [Terraform pipeline](#terraform-pipeline)
 - [Terraform security check](#terraform-security-score)
+- [Notify sentry of release](#notify-sentry-of-release)
 
 Finally some [advice](#general-advices) on how to try the pipeline (for development).
 
@@ -122,7 +123,9 @@ include:
   - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/test-unit.yml'
 ```
 
-will import the code from an external repository; notice ref and filename are embedded into the URL
+will import the code from an external repository; notice ref and filename are embedded into the URL.
+
+**Throughout the readme, the tag section will be a placeholder**.
 
 ## Linting
 
@@ -134,7 +137,7 @@ Additionally it will perform the linting of the selected languages. All is neede
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/lint-go.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/lint-go.yml'
 
 stages:
   - lint
@@ -153,7 +156,7 @@ If one wants to check the kube manifests (through lint and security practices), 
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/test-kubernetes-score.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/test-kubernetes-score.yml'
 
 stages:
   - lint
@@ -173,7 +176,7 @@ NB: The test `label_values` needs to be skipped because of the values `${CI_COMM
 
 ```yaml
 include:
-  remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/test-unit.yml'
+  remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/test-unit.yml'
 
 stages:
   - test
@@ -189,7 +192,7 @@ This will spin up a `docker-compose.test.yml` and check the exit code of the con
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/docker.yml'
 
 stages:
   - build
@@ -207,7 +210,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/kubernetes-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-quality.yml'
 
 stages:
   - build
@@ -233,7 +236,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/kubernetes-regional.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-regional.yml'
 
 stages:
   - build
@@ -267,7 +270,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/kubernetes-multiregion.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-multiregion.yml'
 
 stages:
   - build
@@ -387,7 +390,7 @@ deploy:production:europe:image:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/kubernetes-task.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-task.yml'
 
 stages:
   - deploy
@@ -412,7 +415,7 @@ Just like k8s, but with some additional variables
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/helm-{quality|regional|multiregion}.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/helm-{quality|regional|multiregion}.yml'
 
 stages:
   - build
@@ -444,7 +447,7 @@ This is for a repository which holds a Helm chart. It is triggered at every tag.
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/helm-publish.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/helm-publish.yml'
 
 stages:
   - push
@@ -464,7 +467,7 @@ For slack, we use a simple webhook.
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/notify.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/notify.yml'
 
 stages:
   - notify
@@ -481,7 +484,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/bucket-production.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/bucket-production.yml'
 
 stages:
   - deploy
@@ -513,7 +516,7 @@ If unset, `BUCKET_PATH` defaults to `data`
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/serverless-regional.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/serverless-regional.yml'
 
 stages:
   - deploy
@@ -534,7 +537,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/serverless-multiregion.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/serverless-multiregion.yml'
 
 stages:
   - deploy
@@ -571,7 +574,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/endpoint.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/endpoint.yml'
 
 stages:
   - test
@@ -586,7 +589,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/cloudrun-production.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/cloudrun-production.yml'
 
 stages:
   - deploy
@@ -612,7 +615,7 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/terraform.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/terraform.yml'
 
 cache:
   paths:
@@ -632,11 +635,23 @@ stages:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/terraform-security.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/terraform-security.yml'
 
 stages:
   - test
 ```
+
+## Notify sentry of release
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/sentry.yml'
+
+stages:
+  - notify
+```
+
+This stage makes an API call to the project-specific sentry webhook, in order to announce a new release [as per the docs](https://docs.sentry.io/workflow/releases/?platform=javascript#using-the-api).
 
 # General advices
 
