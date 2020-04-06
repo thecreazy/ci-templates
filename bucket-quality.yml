@@ -1,5 +1,5 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.0.1/templates/bucket.yml'
+  - 'templates/bucket.yml'
 
 deploy:quality:
   extends: .deploy
