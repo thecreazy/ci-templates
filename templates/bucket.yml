@@ -1,11 +1,11 @@
-deploy:
+.deploy:
   image: gdiener/ci-image-gcp:v1.0.1
   stage: deploy
   script:
     - &connection |
-      # CLUSTER CONNECTION PHASE
+      # CONNECTION PHASE
 
-      for var in "GOOGLE_KEY" "BUCKET_NAME" "GOOGLE_PROJECT"; do
+      for var in "GOOGLE_KEY" "BUCKET_NAME" "GOOGLE_PROJECT" ; do
           if [ -z "${!var}" ]; then
             echo
             echo "-> [WARNING] Missing '${var}' variable!"
@@ -25,23 +25,35 @@ deploy:
       COMMAND_TO_RUN=( gsutil -m )
 
       if [ -z "${DIR_TO_SYNC}" ]; then
-        DIR_TO_SYNC="public"
+        DIR_TO_SYNC="."
       fi
 
-      if [ "${DIR_TO_SYNC}" = "copy" ]
+      if [ -n "${BUCKET_HEADERS}" ]; then
+        echo
+        echo "-> Setting '${BUCKET_HEADERS}' headers!"
+        echo
+
+        COMMAND_TO_RUN+=( -h "${BUCKET_HEADERS}" )
+      fi
+
+      if [ "${SYNC_MODE}" = "copy" ]; then
         COMMAND_TO_RUN+=( cp )
+        MESSAGE=uploaded
       else
         COMMAND_TO_RUN+=( rsync )
+        MESSAGE=synchronized
       fi
 
-      COMMAND_TO_RUN+=( -d -r "${DIR_TO_SYNC}" gs://"${BUCKET_NAME}" )
+      if [ -z "${BUCKET_PATH+x}" ]; then
+        BUCKET_PATH=data
+      fi
+
+      COMMAND_TO_RUN+=( -d -J -r "${DIR_TO_SYNC}" "gs://${BUCKET_NAME}/${BUCKET_PATH}" )
 
       "${COMMAND_TO_RUN[@]}"
 
       echo
-      echo "-> File synchronized to '${BUCKET_NAME}'!"
+      echo "-> File ${MESSAGE} to '${BUCKET_NAME}'!"
       echo
-  only:
-    - /^v.+$/i
-  except:
-    - branches
+  variables:
+    GIT_DEPTH: 1

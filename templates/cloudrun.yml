@@ -1,0 +1,124 @@
+.cloudrun:deploy:
+  image: gdiener/ci-image-gcp:v1.0.1
+  stage: deploy
+  script:
+    - &connection |
+      # CLUSTER CONNECTION PHASE
+      for var in "GOOGLE_KEY" "SERVICE_NAME" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "GOOGLE_PROJECT"; do
+          if [ -z "${!var}" ]; then
+            echo
+            echo "-> [WARNING] Missing '${var}' variable!"
+            echo
+            exit 1
+          fi
+      done
+      echo "${GOOGLE_KEY}" > /tmp/key.json
+
+      gcloud config set project ${GOOGLE_PROJECT}
+
+      echo "Google project '${GOOGLE_PROJECT}' configured"
+      gcloud auth activate-service-account --key-file /tmp/key.json
+    - |
+      # DEPLOY PHASE
+
+      # Useless for now: gcloud run does not have a way to take cm/sec
+      # echo
+      # echo "-> Deploying kubernetes secrets and configmaps"
+      # echo
+
+      # echo ${SECRET_YAML} > kube/secret.yaml
+      # kubectl apply -f kube/configmap.yaml --namespace=${NAMESPACE}
+      # kubectl apply -f kube/secret.yaml --namespace=${NAMESPACE}
+
+      echo
+      echo "-> Deploying cloudrun service '${SERVICE_NAME}' with tag '${CI_COMMIT_TAG}'"
+      echo
+
+      COMMAND_TO_RUN=( gcloud run deploy ${SERVICE_NAME} --image ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG} )
+
+      echo
+      echo "-> Setting '${CLUSTER_NAME}-${CLUSTER_ZONE}' cluster!"
+      echo
+
+      COMMAND_TO_RUN+=( --platform gke --cluster ${CLUSTER_NAME} --cluster-location ${CLUSTER_ZONE})
+
+      echo
+      echo "-> Setting '${NAMESPACE}' namespace!"
+      echo
+
+      COMMAND_TO_RUN+=( --namespace ${NAMESPACE} )
+
+      if [ -n "${CONNECTIVITY}" ]; then
+        echo
+        echo "-> Setting connectivity to '${CONNECTIVITY}' !"
+        echo
+
+        COMMAND_TO_RUN+=( --connectivity ${CONNECTIVITY} )
+      fi
+
+      if [ -n "${TIMEOUT}" ]; then
+        echo
+        echo "-> Setting timeout to '${TIMEOUT}' !"
+        echo
+
+        COMMAND_TO_RUN+=( --timeout ${TIMEOUT} )
+      fi
+
+      if [ -n "${CONCURRENCY}" ]; then
+        echo
+        echo "-> Setting concurrency to '${CONCURRENCY}' !"
+        echo
+
+        COMMAND_TO_RUN+=( --concurrency ${CONCURRENCY} )
+      fi
+
+      if [ -n "${CPU}" ]; then
+        echo
+        echo "-> Setting '${CPU}' cpu limit!"
+        echo
+
+        COMMAND_TO_RUN+=( --cpu ${CPU} )
+      fi
+
+      if [ -n "${MEMORY}" ]; then
+        echo
+        echo "-> Setting '${MEMORY}' mem limit!"
+        echo
+
+        COMMAND_TO_RUN+=( --memory ${MEMORY} )
+      fi
+
+      if [ -n "${MAX_INSTANCES}" ]; then
+        echo
+        echo "-> Setting '${MAX_INSTANCES}' max_instances!"
+        echo
+
+        COMMAND_TO_RUN+=( --max_instances ${MAX_INSTANCES} )
+      fi
+
+      if [ -n "${ENV}" ]; then
+        echo
+        echo "-> Setting env !"
+        echo
+
+        COMMAND_TO_RUN+=( --set-env-vars=${ENV} )
+      fi
+
+      STATUS=0
+
+      ${COMMAND_TO_RUN[@]} || STATUS=1
+
+      if [ "${STATUS}" = "1" ]; then
+        gcloud run services describe ${SERVICE_NAME} --platform gke --cluster ${CLUSTER_NAME} --cluster-location ${CLUSTER_ZONE} --namespace ${NAMESPACE}
+      fi
+
+      exit ${STATUS}
+
+      echo
+      echo "-> Deploy on ${ENVIRONMENT}: '${DOMAIN}' completed!"
+      echo
+  environment:
+    name: ${ENVIRONMENT}
+    url: http://${DOMAIN}
+  variables:
+    GIT_DEPTH: 1

@@ -1,0 +1,11 @@
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/templates/bucket.yml'
+
+deploy:quality:
+  extends: .deploy
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
+    BUCKET_NAME: ${BUCKET_NAME_QUALITY}
+    BUCKET_HEADERS: ${BUCKET_HEADERS_QUALITY}
+  only:
+    - master

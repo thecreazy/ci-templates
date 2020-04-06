@@ -29,6 +29,8 @@
       kubectl config set-context $(kubectl config current-context) --namespace="${NAMESPACE}"
 
       echo
+      echo "-> Namespace '$(kubectl config view --minify --output jsonpath={..namespace})' configured!"
+      echo
       kubectl cluster-info
       echo
     - |
@@ -50,17 +52,10 @@
     - |
       # EXEC THE SCRIPT TO KUPDATE
 
-      eval "${KUPDATE_SCRIPT}"
-
-.exec:production:task:
-  extends: .exec:task
-  only:
-    - /^v.+$/i
-  except:
-    - branches
+      "${KUPDATE_SCRIPT}"
 
 exec:production:task:
-  extends: .exec:production:task
+  extends: .exec:task
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
@@ -74,3 +69,7 @@ exec:production:task:
             exit 1
           fi
       done
+  only:
+    - /^v.+$/i
+  except:
+    - branches

@@ -1,0 +1,55 @@
+test:docker-security:
+  stage: test
+  image:
+    name: aquasec/trivy:0.5.2
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: none
+    TRIVY_USERNAME: ${CI_REGISTRY_USER}
+    TRIVY_PASSWORD: ${CI_REGISTRY_PASSWORD}
+  script:
+    - |
+      # RUN SECURITY CHECKS
+
+      if [ -z "${IMAGES}" ]; then
+
+        # Build report
+        trivy --exit-code 0 --no-progress --format template --template "/contrib/gitlab.tpl" -o gl-container-scanning-report.json "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+        echo
+        echo
+        echo
+
+        # Print report
+        trivy --exit-code 0 --no-progress --severity HIGH "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+        echo
+        echo
+        echo
+
+        # Fail on high and critical vulnerabilities
+        trivy --exit-code 1 --severity CRITICAL --no-progress "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+
+      else
+
+        for image in ${IMAGES}; do
+
+          # Build report
+          trivy --exit-code 0 --no-progress --format template --template "/contrib/gitlab.tpl" -o gl-container-scanning-report.json "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}"
+          echo
+          echo
+          echo
+
+          # Print report
+          trivy --exit-code 0 --no-progress --severity HIGH "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}"
+          echo
+          echo
+          echo
+
+          # Fail on high and critical vulnerabilities
+          trivy --exit-code 1 --severity CRITICAL --no-progress "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}"
+
+        done
+      fi
+  only:
+    - /^v.+$/i
+    - master
+    - merge_requests

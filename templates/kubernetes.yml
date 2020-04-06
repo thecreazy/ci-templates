@@ -183,7 +183,7 @@
 
           kubectl describe ${resource}
 
-          if [ ${STATUS} == 1 ]; then
+          if [ "${STATUS}" = "1" ]; then
             echo
             echo "-> Deploy failed on ${ENVIRONMENT} for '${resource}' resource!"
             echo
@@ -196,6 +196,8 @@
       echo
       echo "-> Deploy on ${ENVIRONMENT}: '${DOMAIN}' completed!"
       echo
+  variables:
+    GIT_STRATEGY: none
 
 .deploy:manifest:
   image: gdiener/ci-image-gcp:v1.0.1
@@ -281,6 +283,8 @@
 
       rm /tmp/manifests.yaml
     - *rollout
+  variables:
+    GIT_DEPTH: 1
 
 deploy:quality:image:
   extends: .deploy:image
@@ -360,7 +364,7 @@ deploy:quality:manifest:
 
         CURRENT_TAG=$(kubectl get "${resource}" -o=jsonpath='{$.spec.template.spec.containers[:1].image}' | cut -d ":" -f 2)
 
-        if [ ${STATUS} == 1 ]; then
+        if [ "${STATUS}" = "1" ]; then
           echo
           echo "-> [WARNING] Rollback failed on ${ENVIRONMENT} for '${resource}' resource, current deployed tag is '${CURRENT_TAG}'!"
           echo
@@ -372,3 +376,5 @@ deploy:quality:manifest:
       done
 
       exit ${STATUS}
+  variables:
+    GIT_STRATEGY: none

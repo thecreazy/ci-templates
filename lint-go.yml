@@ -1,0 +1,15 @@
+lint:go:
+  stage: lint
+  image: cytopia/golint:latest-release-0.1
+  script:
+    - |
+
+      echo
+      echo "-> Linting code:"
+      echo
+
+      golint .
+
+      echo
+      echo "-> Code checked!"
+      echo
