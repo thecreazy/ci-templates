@@ -99,6 +99,7 @@ According to the operation / the type of pipeline you have to perform, you can p
 - [Google cloud run](#google-cloud-run)
 - [Terraform pipeline](#terraform-pipeline)
 - [Terraform security check](#terraform-security-score)
+- [Notify sentry of release](#notify-sentry-of-release)
 
 Finally some [advice](#general-advices) on how to try the pipeline (for development).
 
@@ -637,6 +638,18 @@ include:
 stages:
   - test
 ```
+
+## Notify sentry of release
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/sentry.yml'
+
+stages:
+  - notify
+```
+
+This stage makes an API call to the project-specific sentry webhook, in order to announce a new release [as per the docs](https://docs.sentry.io/workflow/releases/?platform=javascript#using-the-api).
 
 # General advices
 
