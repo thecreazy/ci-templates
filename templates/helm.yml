@@ -84,6 +84,15 @@
       echo "-> App ${APP_NAME} released!"
       echo
 
+    - |
+      # POST-DEPLOY HOOK
+
+      if [ -n "${AFTER_CUSTOM_APPLY_FILE_PATH}" ]; then
+        kubectl apply -f "${AFTER_CUSTOM_APPLY_FILE_PATH}" \
+          &&  echo "-> Custom post-job deployed!"
+              echo
+      fi
+
 deploy:quality:helm:
   extends: .helm:deploy
   only:
