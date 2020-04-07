@@ -12,11 +12,11 @@ We manage our GCP infrastructure through Terraform, thus you can find also terra
 
 With Kubernetes:
 
-`lint -> build -> test -> manifest -> deploy -> rollback -> notify`
+`lint -> build -> test -> push -> manifest -> deploy -> rollback -> notify`
 
 With Helm:
 
-`lint -> build -> test -> manifest -> deploy  -> notify`
+`lint -> build -> test -> push -> deploy  -> notify`
 
 Rollback is not necessary thanks to Helm's atomic operations (if the installing fails, Helm cleans up by itself)
 
@@ -426,6 +426,10 @@ variables:
   IMAGES: "app nginx"
   APP_NAME: "myapp"
   GOOGLE_PROJECT: "my-project"
+  MY_ORG: "my-org"
+  MY_ORG_CHARTS: "my-chart-bucket-name"
+  CHART_NAME: "my-app-chart"
+
 
   # QUALITY VARIABLES
   CLUSTER_NAME_QUALITY: quality
