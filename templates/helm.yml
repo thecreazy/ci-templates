@@ -8,7 +8,7 @@
   script:
     - |
       #CHECKING VARIABLES PHASE
-      for var in "GOOGLE_KEY" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "APP_NAME" "PART_OF" "GOOGLE_PROJECT"; do
+      for var in "GOOGLE_KEY" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "APP_NAME" "PART_OF" "GOOGLE_PROJECT" "CHARTS_URL" "CHART_NAME"; do
           if [ -z "${!var}" ]; then
             echo
             echo "-> [WARNING] Missing '${var}' variable!"
@@ -69,14 +69,14 @@
       fi
     - |
       # HELM APPLICATION
-      helm repo add myorg https://myorg-bucket.storage.googleapis.com
+      helm repo add current-repo "${CHARTS_URL}"
       helm repo update
 
       if [ -z "${TIMEOUT}" ]; then
         TIMEOUT=600
       fi
 
-      helm upgrade --install --atomic "${APP_NAME}" myorg/helm-chart --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace ${NAMESPACE} #--kube-context ${CONTEXT}
+      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}"
       sleep 5
       helm test "${APP_NAME}"
 
