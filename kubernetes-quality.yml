@@ -1,6 +1,6 @@
 include:
-  - 'docker.yml'
-  - 'templates/kubernetes.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.2.1/templates/kubernetes.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.2.1/docker.yml'
 
 deploy:quality:image:
   variables:
