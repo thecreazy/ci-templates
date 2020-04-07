@@ -1,5 +1,5 @@
 .docker:
-  image: gdiener/dind-bash:v1.0.1
+  image: gdiener/dind-bash:v1.1.0
   services: [ "docker:dind" ]
 
 variables:
