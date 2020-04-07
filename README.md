@@ -426,8 +426,7 @@ variables:
   IMAGES: "app nginx"
   APP_NAME: "myapp"
   GOOGLE_PROJECT: "my-project"
-  MY_ORG: "my-org"
-  MY_ORG_CHARTS: "my-chart-bucket-name"
+  CHARTS_URL: "https://my-chart-bucket-name.cloudstorage.provider.com"
   CHART_NAME: "my-app-chart"
 
 
