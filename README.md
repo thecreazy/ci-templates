@@ -89,7 +89,7 @@ According to the operation / the type of pipeline you have to perform, you can p
   - ["Simple script" execution](#kubernetes-"simple-script"-pipeline)
   - [Note on configmaps](#note-on-configmaps)
 - [Helm deployment](#helm-deployment)
-- [Helm chart publishing](#helm-chart-publishing)
+- [SSH command](#ssh-command)
 - [Publishing on calendar](#publish-to-google-calendar-and-slack)
 - [Google bucket upload](#deploy-to-google-storage)
 - Serverless functions deployment
@@ -446,6 +446,7 @@ variables:
 ```
 
 ### Helm chart publishing
+
 This is for a repository which holds a Helm chart. It is triggered at every tag.
 
 ```yaml
@@ -458,6 +459,33 @@ stages:
 variables:
   GOOGLE_PROJECT: "my-project"
   BUCKET_NAME: "my-charts"
+```
+
+## SSH command
+
+This is for a repository which need to deploy through ssh.
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/ssh-production.yml'
+
+stages:
+  - deploy
+
+variables:
+  SSH_PRIVATE_KEY_QUALITY: <ssh key base64 encoded>
+  SSH_USER_QUALITY: admin
+  SSH_HOST_QUALITY: quality.example.com
+  SSH_COMMAND_QUALITY: ansible-playbook -i quality  app.yml'
+  SSH_KNOWN_HOSTS_QUALITY: <known hosts file base64 encoded>
+  DOMAIN_QUALITY: quality.example.com
+
+  SSH_PRIVATE_KEY_PRODUCTION: <ssh key base64 encoded>
+  SSH_USER_PRODUCTION: admin
+  SSH_HOST_PRODUCTION: production.example.com
+  SSH_COMMAND_PRODUCTION: ansible-playbook -i production app.yml'
+  SSH_KNOWN_HOSTS_PRODUCTION: <known hosts file base64 encoded>
+  DOMAIN_PRODUCTION: production.example.com
 ```
 
 ## Publish to Google Calendar and Slack
