@@ -40,6 +40,14 @@
         COMMAND_TO_RUN+=( --memory=${MEMORY} )
       fi
 
+      if [ -n "${SERVICE_ACCOUNT}" ]; then
+        echo
+        echo "-> Setting '${SERVICE_ACCOUNT}' service account!"
+        echo
+
+        COMMAND_TO_RUN+=( --service-account=${SERVICE_ACCOUNT} )
+      fi
+
       if [ -n "${TIMEOUT}" ]; then
         echo
         echo "-> Setting '${TIMEOUT}' timeout limit!"
