@@ -1,0 +1,50 @@
+.ssh:exec:
+  image: registry.jobtome.io/devops/docker-images/gcloud-sdk:v1.0.4
+  stage: deploy
+  script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "SSH_PRIVATE_KEY" "SSH_USER" "SSH_HOST" "SSH_COMMAND"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+
+      # CONNECTION PHASE
+      eval $(ssh-agent -s)
+      mkdir ~/.ssh
+      touch ~/.ssh/known_hosts ~/.ssh/id_rsa
+      chmod -R 644 ~/.ssh
+
+      echo "${SSH_PRIVATE_KEY}" | base64 -d > ~/.ssh/id_rsa
+
+      # DEPLOY PHASE
+      echo
+      echo "-> Executing command through ssh!"
+      echo
+
+      COMMAND_TO_RUN=( ssh -i ~/.ssh/id_rsa )
+
+      if [ -n "${SSH_KNOWN_HOSTS}" ]; then
+        echo "${SSH_KNOWN_HOSTS}" | base64 -d > ~/.ssh/known_hosts
+      else
+        echo
+        echo "-> Disabling strict host key checking!"
+        echo
+
+        COMMAND_TO_RUN+=( -o StrictHostKeyChecking=no )
+      fi
+
+      COMMAND_TO_RUN+=( "${SSH_USER}@${SSH_HOST}" "${SSH_COMMAND}")
+
+      ${COMMAND_TO_RUN[@]}
+
+      echo
+      echo "-> Command executed on ${SSH_HOST}!"
+      echo
+  variables:
+    GIT_DEPTH: 1
+  environment:
+    name: ${ENVIRONMENT}
+    url: https://${DOMAIN}
