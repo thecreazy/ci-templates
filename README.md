@@ -89,6 +89,7 @@ According to the operation / the type of pipeline you have to perform, you can p
   - ["Simple script" execution](#kubernetes-"simple-script"-pipeline)
   - [Note on configmaps](#note-on-configmaps)
 - [Helm deployment](#helm-deployment)
+- [Helm chart publishing](#helm-chart-publishing)
 - [SSH command](#ssh-command)
 - [Publishing on calendar](#publish-to-google-calendar-and-slack)
 - [Google bucket upload](#deploy-to-google-storage)
