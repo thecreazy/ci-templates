@@ -68,12 +68,32 @@
           fi
       fi
     - |
+      # SECRETS APPLICATION
+
+      if [ -n "${SECRET_YAML}" ]; then
+        touch /tmp/secrets.yaml
+
+        echo "${SECRET_YAML}" | base64 -d > /tmp/secrets.yaml
+        envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
+
+        kubectl apply -f /tmp/secrets.yaml
+
+        echo
+        echo "-> Secrets deployed!"
+        echo
+      else
+        echo
+        echo "-> Missing 'SECRET_YAML' variable!"
+        echo
+      fi
+
+    - |
       # HELM APPLICATION
       helm repo add current-repo "${CHARTS_URL}"
       helm repo update
 
       if [ -z "${TIMEOUT}" ]; then
-        TIMEOUT=600
+        TIMEOUT=600s
       fi
 
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}"
