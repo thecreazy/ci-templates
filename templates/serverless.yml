@@ -114,10 +114,6 @@
       echo
       echo "-> Deploy on ${ENVIRONMENT}: '${DOMAIN}' completed!"
       echo
-  only:
-    - /^v.+$/i
-  except:
-    - branches
   environment:
     name: ${ENVIRONMENT}
     url: https://${DOMAIN}
