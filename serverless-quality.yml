@@ -5,6 +5,7 @@ deploy:quality:
   extends: .serverless:deploy
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
+    FUNCTION_NAME: ${FUNCTION_NAME_QUALITY}
     SERVICE_ACCOUNT: ${SERVICE_ACCOUNT_QUALITY}
     REGION: ${REGION_QUALITY}
     DOMAIN: ${DOMAIN_QUALITY}
