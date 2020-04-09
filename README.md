@@ -460,6 +460,8 @@ stages:
 variables:
   GOOGLE_PROJECT: "my-project"
   BUCKET_NAME: "my-charts"
+  BUCKET_HEADERS: "Cache-Control:no-cache, max-age=0"
+  BUCKET_PATH: ""
 ```
 
 ## SSH command

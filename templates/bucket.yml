@@ -19,7 +19,7 @@
       gcloud config set project "${GOOGLE_PROJECT}"
 
       gcloud auth activate-service-account --key-file /tmp/key.json
-    - |
+
       # SYNCHRONIZING FILES IN THE BUCKET
 
       COMMAND_TO_RUN=( gsutil -m )
@@ -48,7 +48,9 @@
         BUCKET_PATH=data
       fi
 
-      COMMAND_TO_RUN+=( -d -J -r "${DIR_TO_SYNC}" "gs://${BUCKET_NAME}/${BUCKET_PATH}" )
+      BUCKET_FULL_PATH="gs:/$(echo "/${BUCKET_NAME}/${BUCKET_PATH}/" | tr -s /)"
+
+      COMMAND_TO_RUN+=( -d -J -r "${DIR_TO_SYNC}" "${BUCKET_FULL_PATH}" )
 
       "${COMMAND_TO_RUN[@]}"
 
