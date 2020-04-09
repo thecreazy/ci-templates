@@ -38,12 +38,12 @@ helm:publish:
       BUCKET_PATH="/${BUCKET_PATH}"
       fi
 
-      gsutil cp gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml /tmp/index.yaml
+      gsutil -h 'Cache-Control:no-cache, max-age=0' cp gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml /tmp/index.yaml
 
       helm package .
       helm repo index . --merge /tmp/index.yaml
 
-      gsutil cp ./index.yaml gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml
+      gsutil -h 'Cache-Control:no-cache, max-age=0' cp ./index.yaml gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml
       gsutil cp ./*.tgz* gs://"${BUCKET_NAME}${BUCKET_PATH}"/
   only:
     - /^v.+$/i
