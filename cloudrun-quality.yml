@@ -1,6 +1,6 @@
 include:
-  - local: './docker.yml'
-  - local: './templates/cloudrun.yml'
+  - './docker.yml'
+  - './templates/cloudrun.yml'
 
 deploy:quality:
   extends: .cloudrun:deploy

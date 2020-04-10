@@ -1,6 +1,6 @@
 include:
-  - local: './docker.yml'
-  - local: './templates/helm.yml'
+  - './docker.yml'
+  - './templates/helm.yml'
 
 deploy:quality:helm:
   variables:

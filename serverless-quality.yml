@@ -1,5 +1,5 @@
 include:
-  - local: './templates/serverless.yml'
+  - './templates/serverless.yml'
 
 deploy:quality:
   extends: .serverless:deploy

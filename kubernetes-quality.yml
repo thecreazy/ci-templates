@@ -1,6 +1,6 @@
 include:
-  - local: './docker.yml'
-  - local: './templates/kubernetes.yml'
+  - './docker.yml'
+  - './templates/kubernetes.yml'
 
 deploy:quality:image:
   variables:

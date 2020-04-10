@@ -1,5 +1,5 @@
 include:
-  - local: './kubernetes-quality.yml'
+  - './kubernetes-quality.yml'
 
 
 # EUROPE
