@@ -94,6 +94,7 @@ According to the operation / the type of pipeline you have to perform, you can p
 - [Publishing on calendar](#publish-to-google-calendar-and-slack)
 - [Google bucket upload](#deploy-to-google-storage)
 - Serverless functions deployment
+  - [Quality deployment](#google-function-quality-pipeline)
   - [Regional deployment](#google-function-regional-pipeline)
   - [Multi-regional deployment](#google-function-multiregion-pipeline)
 - [Google endpoint](#google-endpoint)
@@ -544,6 +545,32 @@ If unset, `BUCKET_PATH` defaults to `data`
 
 **NOTE: if you set "BUCKET_PATH" variable to '' and the "SYNC_MODE" variable is set to rsync you'll lose all bucket data**
 
+## Google function quality pipeline
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/serverless-quality.yml'
+
+stages:
+  - deploy
+
+variables:
+  RUNTIME: go111
+  TRIGGER_HTTP: 1
+  TIMEOUT: 30
+  ENTRYPOINT: main
+
+  # QUALITY VARIABLES
+  SERVICE_ACCOUNT_QUALITY: default
+  FUNCTION_NAME_QUALITY: my-function
+  GOOGLE_KEY_QUALITY: <google json key>
+  REGION_QUALITY: europe-west1
+  TRIGGER_TOPIC_QUALITY: topic-qa
+  DOMAIN_QUALITY: https://us-central1.cloudfunctions.net/http_function
+  SECRET_YAML_QUALITY: <secret base64 encoded>
+  SECRET_ENV_LIST_QUALITY: "SUPERSECRET=env"
+```
+
 ## Google function regional pipeline
 
 ```yaml
@@ -554,52 +581,86 @@ stages:
   - deploy
 
 variables:
-  REGION: us-central1
-  FUNCTION_NAME: my-function
   RUNTIME: go111
   TRIGGER_HTTP: 1
-  GOOGLE_KEY: <google json key>
-  DOMAIN: https://us-central1-my-project.cloudfunctions.net/http_function
-  SECRET_YAML: <secret base64 encoded>
-  SECRET_ENV_LIST: "SUPERSECRET=env"
   TIMEOUT: 30
+  ENTRYPOINT: main
+
+  # QUALITY VARIABLES
+  SERVICE_ACCOUNT_QUALITY: default
+  FUNCTION_NAME_QUALITY: my-function
+  GOOGLE_KEY_QUALITY: <google json key>
+  REGION_QUALITY: europe-west1
+  TRIGGER_TOPIC_QUALITY: topic-qa
+  DOMAIN_QUALITY: https://us-central1.cloudfunctions.net/http_function
+  SECRET_YAML_QUALITY: <secret base64 encoded>
+  SECRET_ENV_LIST_QUALITY: "SUPERSECRET=env"
+
+  # PRODUCTION VARIABLES
+  SERVICE_ACCOUNT_PRODUCTION: default
+  FUNCTION_NAME_PRODUCTION: my-function
+  REGION_PRODUCTION: europe-west1
+  TRIGGER_TOPIC_PRODUCTION: topic
+  GOOGLE_KEY_PRODUCTION: <google json key>
+  DOMAIN_PRODUCTION: https://us-central1.cloudfunctions.net/http_function
+  SECRET_YAML_PRODUCTION: <secret base64 encoded>
+  SECRET_ENV_LIST_PRODUCTION: "SUPERSECRET=env"
 ```
 
 ## Google function multiregion pipeline
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/serverless-multiregion.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/serverless-multiregional.yml'
 
 stages:
   - deploy
 
 variables:
-  FUNCTION_NAME: my-function
   RUNTIME: go111
   TRIGGER_HTTP: 1
   TIMEOUT: 30
+  ENTRYPOINT: main
+
+  # QUALITY VARIABLES
+  SERVICE_ACCOUNT_QUALITY: default
+  FUNCTION_NAME_QUALITY: my-function
+  GOOGLE_KEY_QUALITY: <google json key>
+  REGION_QUALITY: europe-west1
+  TRIGGER_TOPIC_QUALITY: topic-qa
+  DOMAIN_QUALITY: https://us-central1.cloudfunctions.net/http_function
+  SECRET_YAML_QUALITY: <secret base64 encoded>
+  SECRET_ENV_LIST_QUALITY: "SUPERSECRET=env"
 
   # PRODUCTION EUROPE VARIABLES
-  GOOGLE_KEY_EUROPE: <google json key>
-  REGION_EUROPE: europe-west1
-  DOMAIN_EUROPE: https://europe-west1-my-project.cloudfunctions.net/http_function
-  SECRET_YAML_EUROPE: <secret base64 encoded>
-  SECRET_ENV_LIST_EUROPE: "SUPERSECRET=env"
+  SERVICE_ACCOUNT_PRODUCTION_EUROPE: default
+  FUNCTION_NAME_PRODUCTION_EUROPE: my-function
+  GOOGLE_KEY_PRODUCTION_EUROPE: <google json key>
+  REGION_PRODUCTION_EUROPE: europe-west1
+  TRIGGER_TOPIC_PRODUCTION_EUROPE: topic-eu
+  DOMAIN_PRODUCTION_EUROPE: https://europe-west1.cloudfunctions.net/http_function
+  SECRET_YAML_PRODUCTION_EUROPE: <secret base64 encoded>
+  SECRET_ENV_LIST_PRODUCTION_EUROPE: "SUPERSECRET=env"
 
   # PRODUCTION AMERICA VARIABLES
-  GOOGLE_KEY_AMERICA: <google json key>
-  REGION_AMERICA: us-central1
-  DOMAIN_AMERICA: https://us-central1-my-project.cloudfunctions.net/http_function
-  SECRET_YAML_AMERICA: <secret base64 encoded>
-  SECRET_ENV_LIST_AMERICA: "SUPERSECRET=env"
+  SERVICE_ACCOUNT_PRODUCTION_AMERICA: default
+  FUNCTION_NAME_PRODUCTION_AMERICA: my-function
+  GOOGLE_KEY_PRODUCTION_AMERICA: <google json key>
+  REGION_PRODUCTION_AMERICA: us-central1
+  TRIGGER_TOPIC_PRODUCTION_AMERICA: topic-am
+  DOMAIN_PRODUCTION_AMERICA: https://us-central1.cloudfunctions.net/http_function
+  SECRET_YAML_PRODUCTION_AMERICA: <secret base64 encoded>
+  SECRET_ENV_LIST_PRODUCTION_AMERICA: "SUPERSECRET=env"
 
   # PRODUCTION ASIA VARIABLES
-  GOOGLE_KEY_ASIA: <google json key>
-  REGION_ASIA: asia-east2
-  DOMAIN_ASIA: https://asia-east2-my-project.cloudfunctions.net/http_function
-  SECRET_YAML_ASIA: <secret base64 encoded>
-  SECRET_ENV_LIST_ASIA: "SUPERSECRET=env"
+  SERVICE_ACCOUNT_PRODUCTION_ASIA: default
+  FUNCTION_NAME_PRODUCTION_ASIA: my-function
+  GOOGLE_KEY_PRODUCTION_ASIA: <google json key>
+  REGION_PRODUCTION_ASIA: asia-east2
+  TRIGGER_TOPIC_PRODUCTION_ASIA: topic-as
+  DOMAIN_PRODUCTION_ASIA: https://asia-east2.cloudfunctions.net/http_function
+  SECRET_YAML_PRODUCTION_ASIA: <secret base64 encoded>
+  SECRET_ENV_LIST_PRODUCTION_ASIA: "SUPERSECRET=env"
 ```
 
 ## Google endpoint
