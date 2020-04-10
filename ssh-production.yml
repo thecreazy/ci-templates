@@ -1,7 +1,7 @@
 include:
   - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.2.4/ssh-quality.yml'
 
-deploy:quality:image:
+ssh:production:
   extends: .ssh:exec
   variables:
     SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEY_PRODUCTION}
