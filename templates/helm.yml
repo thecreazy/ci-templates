@@ -92,13 +92,21 @@
       helm repo add current-repo "${CHARTS_URL}"
       helm repo update
 
+      echo
+      helm search repo current-repo/"${CHART_NAME}"
+      echo
+
       if [ -z "${TIMEOUT}" ]; then
         TIMEOUT=600s
       fi
 
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}"
       sleep 5
-      helm test "${APP_NAME}"
+      # echo
+      # echo "-> App ${APP_NAME} up! Proceeding to the tests"
+      # echo
+
+      # helm test "${APP_NAME}"
 
       echo
       echo "-> App ${APP_NAME} released!"
