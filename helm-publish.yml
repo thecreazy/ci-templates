@@ -13,7 +13,7 @@ helm:publish:
             exit 1
           fi
       done
-    - |
+
       # ACTIVATION PHASE
 
       echo "${GOOGLE_KEY}" > /tmp/key.json
@@ -25,26 +25,33 @@ helm:publish:
       echo
       echo "-> Google project '${GOOGLE_PROJECT}' configured!"
       echo
-    - |
+
       # DEPLOY PHASE
+
+      COMMAND_TO_RUN=( gsutil )
 
       # Check if unset (but allow empty string)
       if [ -z "${BUCKET_PATH+x}" ]; then
         BUCKET_PATH="charts"
       fi
 
-      # Check if not an empty string
-      if [ ! "${BUCKET_PATH}" == "" ]; then
-        BUCKET_PATH="/${BUCKET_PATH}"
+      if [ -n "${BUCKET_HEADERS}" ]; then
+        echo
+        echo "-> Setting '${BUCKET_HEADERS}' headers!"
+        echo
+
+        COMMAND_TO_RUN+=( -h "${BUCKET_HEADERS}" )
       fi
 
-      gsutil cp gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml /tmp/index.yaml
+      BUCKET_FULL_PATH="gs:/$(echo "/${BUCKET_NAME}/${BUCKET_PATH}/" | tr -s /)"
+
+      "${COMMAND_TO_RUN[@]} cp ${BUCKET_FULL_PATH}index.yaml /tmp/index.yaml"
 
       helm package .
       helm repo index . --merge /tmp/index.yaml
 
-      gsutil cp ./index.yaml gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml
-      gsutil cp ./*.tgz* gs://"${BUCKET_NAME}${BUCKET_PATH}"/
+      "${COMMAND_TO_RUN[@]} cp ./index.yaml ${BUCKET_FULL_PATH}index.yaml"
+      "${COMMAND_TO_RUN[@]} cp ./*.tgz* ${BUCKET_FULL_PATH}"
   only:
     - /^v.+$/i
   except:

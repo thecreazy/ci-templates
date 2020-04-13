@@ -1,6 +1,6 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.2.4/docker.yml'
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.2.4/templates/helm.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.3.0/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.3.0/templates/helm.yml'
 
 deploy:quality:helm:
   variables:
@@ -9,6 +9,7 @@ deploy:quality:helm:
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
     DOMAIN: ${DOMAIN_QUALITY}
+    SECRET_YAML: ${SECRET_YAML_QUALITY}
     NAMESPACE: ${NAMESPACE_QUALITY}
     ENVIRONMENT: quality
     ENVIRONMENT_NAME: quality
