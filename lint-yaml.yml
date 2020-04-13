@@ -29,7 +29,7 @@ lint:yaml:
           REVIEWDOG_LEVEL="warning"
         fi
 
-        yamllint --format "parsable" "${LINT_PATH}" | reviewdog \
+        yamllint --format "parsable" "${LINT_PATH}" | reviewdog -name="YAML Linter" \
           -efm="%f:%l:%c: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
       else
         yamllint "${LINT_PATH}"

@@ -29,7 +29,7 @@ lint:go:
           REVIEWDOG_LEVEL="warning"
         fi
 
-        golint "${LINT_PATH}" | reviewdog \
+        golint "${LINT_PATH}" | reviewdog -name="Go Linter" \
           -f=golint -diff="git diff master" -reporter=gitlab-mr-discussion -level="${REVIEWDOG_LEVEL}"
       else
         golint "${LINT_PATH}"
