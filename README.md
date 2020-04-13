@@ -153,6 +153,8 @@ variables:
   REVIEWDOG_LEVEL: warning # optional, values: info, warning, error
 ```
 
+`reviewdog` provides a way to post review comments automatically by integrating with any linter tools with ease. It uses an output of lint tools and posts them as a comment if findings are in diff of patches to review.
+
 The default skipped test for `lint-docker` is `Provide an email address or URL as maintainer`. See skippable tests [here](https://hub.docker.com/r/hadolint/hadolint).
 
 If one wants to check the kube manifests (through lint and security practices), then the import becomes `test-kubernetes-score.yaml`, and it will perform the following:
