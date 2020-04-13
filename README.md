@@ -145,9 +145,16 @@ stages:
   - lint
 
 variables:
-  #optional, used by docker-lint
+  # optional, used by docker-lint
   IGNORE_DOCKER_LINT: "DL3012"
+
+  # optional, used to enable reviewdog
+  ENABLE_REVIEWDOG: 1
+  REVIEWDOG_GITLAB_API_TOKEN: <personal gitlab token used to call v4 api endpoints>
+  REVIEWDOG_LEVEL: warning # optional, values: info, warning, error
 ```
+
+The [Review Dog](https://github.com/reviewdog/reviewdog) feature provides a way to post review comments automatically by integrating with any linter tools with ease. It uses an output of lint tools and posts them as a comment if findings are in diff of patches to review.
 
 The default skipped test for `lint-docker` is `Provide an email address or URL as maintainer`. See skippable tests [here](https://hub.docker.com/r/hadolint/hadolint).
 
@@ -758,7 +765,7 @@ stages:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/terraform-security.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/test-terraform-security.yml'
 
 stages:
   - test
