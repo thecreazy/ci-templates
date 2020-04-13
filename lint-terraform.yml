@@ -1,0 +1,40 @@
+lint:terraform:
+  stage: lint
+  image: gadiener/terraform-reviewdog:v1.0.0
+  variables:
+    GITLAB_API: ${CI_API_V4_URL}
+  script:
+    - |
+      echo
+      echo "-> Linting Terraform files:"
+      echo
+
+      if [ -z "${LINT_PATH}" ]; then
+        LINT_PATH="."
+      fi
+
+      if [ "${ENABLE_REVIEWDOG}" = "1" ]; then
+        echo
+        echo "-> Enabled Review Dog!"
+        echo
+
+        if [ -z "${REVIEWDOG_GITLAB_API_TOKEN}" ]; then
+          echo
+          echo "-> [WARNING] Missing 'REVIEWDOG_GITLAB_API_TOKEN' variable!"
+          echo
+          exit 1
+        fi
+
+        if [ -z "${REVIEWDOG_LEVEL}" ]; then
+          REVIEWDOG_LEVEL="warning"
+        fi
+
+        tflint --format=checkstyle "${LINT_PATH}" | reviewdog -name="Terraform Linter" \
+          -f=golint -diff="git diff master" -reporter=gitlab-mr-discussion -level="${REVIEWDOG_LEVEL}"
+      else
+        tflint --format=checkstyle "${LINT_PATH}"
+      fi
+
+      echo
+      echo "-> Terraform files checked!"
+      echo
