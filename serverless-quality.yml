@@ -1,0 +1,28 @@
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.4.0/templates/serverless.yml'
+
+deploy:quality:
+  extends: .serverless:deploy
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
+    FUNCTION_NAME: ${FUNCTION_NAME_QUALITY}
+    SERVICE_ACCOUNT: ${SERVICE_ACCOUNT_QUALITY}
+    REGION: ${REGION_QUALITY}
+    DOMAIN: ${DOMAIN_QUALITY}
+    SECRET_YAML: ${SECRET_YAML_QUALITY}
+    SECRET_ENV_LIST: ${SECRET_ENV_LIST_QUALITY}
+    TRIGGER_TOPIC: ${TRIGGER_TOPIC_QUALITY}
+    ENVIRONMENT: quality
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "GOOGLE_KEY_QUALITY" "REGION_QUALITY"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  only:
+    - master
+
+

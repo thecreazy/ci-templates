@@ -1,7 +1,7 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.0.0/templates/ssh.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.5.0/templates/ssh.yml'
 
-deploy:quality:image:
+ssh:quality:
   extends: .ssh:exec
   variables:
     SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEYT_QUALITY}
