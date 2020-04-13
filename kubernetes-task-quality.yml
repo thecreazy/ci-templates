@@ -4,6 +4,7 @@ include:
 task:quality:
   extends: .task
   variables:
+    NAMESPACE: ${NAMESPACE_QUALITY}
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}

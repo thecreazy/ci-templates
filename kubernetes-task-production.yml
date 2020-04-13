@@ -4,6 +4,7 @@ include:
 task:production:
   extends: .task
   variables:
+    NAMESPACE: ${NAMESPACE_PRODUCTION}
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
     CLUSTER_ZONE: ${CLUSTER_ZONE_PRODUCTION}
