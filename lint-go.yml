@@ -6,7 +6,7 @@ lint:go:
   script:
     - |
       echo
-      echo "-> Linting code:"
+      echo "-> Linting Go files:"
       echo
 
       if [ -z "${LINT_PATH}" ]; then
@@ -29,11 +29,12 @@ lint:go:
           REVIEWDOG_LEVEL="warning"
         fi
 
-        golint "${LINT_PATH}" | reviewdog -f=golint -diff="git diff master" -reporter=gitlab-mr-discussion -level="${REVIEWDOG_LEVEL}"
+        golint "${LINT_PATH}" | reviewdog \
+          -f=golint -diff="git diff master" -reporter=gitlab-mr-discussion -level="${REVIEWDOG_LEVEL}"
       else
         golint "${LINT_PATH}"
       fi
 
       echo
-      echo "-> Code checked!"
+      echo "-> Go files checked!"
       echo
