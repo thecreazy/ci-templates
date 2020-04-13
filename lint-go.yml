@@ -25,7 +25,11 @@ lint:go:
           exit 1
         fi
 
-        golint "${LINT_PATH}" | reviewdog -f=golint -diff="git diff master" -reporter=gitlab-mr-discussion
+        if [ -z "${REVIEWDOG_LEVEL}" ]; then
+          REVIEWDOG_LEVEL="warning"
+        fi
+
+        golint "${LINT_PATH}" | reviewdog -f=golint -diff="git diff master" -reporter=gitlab-mr-discussion -level="${REVIEWDOG_LEVEL}"
       else
         golint "${LINT_PATH}"
       fi

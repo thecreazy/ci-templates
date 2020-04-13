@@ -144,12 +144,13 @@ stages:
   - lint
 
 variables:
-  #optional, used by docker-lint
+  # optional, used by docker-lint
   IGNORE_DOCKER_LINT: "DL3012"
 
-  #optional, used to enable reviewdog
+  # optional, used to enable reviewdog
   ENABLE_REVIEWDOG: 1
   REVIEWDOG_GITLAB_API_TOKEN: <personal gitlab token used to call v4 api endpoints>
+  REVIEWDOG_LEVEL: warning # optional, values: info, warning, error
 ```
 
 The default skipped test for `lint-docker` is `Provide an email address or URL as maintainer`. See skippable tests [here](https://hub.docker.com/r/hadolint/hadolint).
