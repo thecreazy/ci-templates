@@ -671,7 +671,7 @@ stages:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/terraform-security.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/test-terraform-security.yml'
 
 stages:
   - test
