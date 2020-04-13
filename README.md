@@ -153,7 +153,7 @@ variables:
   REVIEWDOG_LEVEL: warning # optional, values: info, warning, error
 ```
 
-`reviewdog` provides a way to post review comments automatically by integrating with any linter tools with ease. It uses an output of lint tools and posts them as a comment if findings are in diff of patches to review.
+The [Review Dog](https://github.com/reviewdog/reviewdog) feature provides a way to post review comments automatically by integrating with any linter tools with ease. It uses an output of lint tools and posts them as a comment if findings are in diff of patches to review.
 
 The default skipped test for `lint-docker` is `Provide an email address or URL as maintainer`. See skippable tests [here](https://hub.docker.com/r/hadolint/hadolint).
 
