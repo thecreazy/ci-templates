@@ -388,25 +388,53 @@ deploy:production:europe:image:
     - *deployconfig
 ```
 
-## Kubernetes "simple script" pipeline
+## Kubernetes run script quality
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-task.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-task-quality.yml'
 
 stages:
   - deploy
 
 variables:
-  NAMESPACE: 'my-namespace'
+  GOOGLE_PROJECT: my-project
 
-  # PRODUCTION VARIABLES
-  CLUSTER_NAME_PRODUCTION: 'production-europe-west1'
-  CLUSTER_ZONE_PRODUCTION: 'europe-west1-b'
-  KUPDATE_SCRIPT: |
-                  kupdate resource-1 && \
-                  kupdate resource-2 && \
-                  kupdate statefulset resource-3
+  # QUALITY VARIABLES
+  NAMESPACE_QUALITY: my-namespace
+  GOOGLE_KEY_QUALITY: <google json key>
+  CLUSTER_NAME_QUALITY: quality-europe-west1
+  CLUSTER_ZONE_QUALITY: europe-west1-b
+  KUBERNETES_SCRIPT_QUALITY: kupdate statefulset resource-name
+```
+
+If there is only one argument, then the resource type "deployment" is intended. Explicitly give a different resource type e.g. "statefulset" in other cases.
+
+## Kubernetes run script production
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/kubernetes-task-production.yml'
+
+stages:
+  - deploy
+
+variables:
+  GOOGLE_PROJECT: my-project
+
+  # QUALITY VARIABLES
+  NAMESPACE_QUALITY: my-namespace
+  GOOGLE_KEY_QUALITY: <google json key>
+  CLUSTER_NAME_QUALITY: quality-europe-west1
+  CLUSTER_ZONE_QUALITY: europe-west1-b
+  KUBERNETES_SCRIPT_QUALITY: kupdate statefulset resource-name
+
+  # QUALITY VARIABLES
+  NAMESPACE_QUALITY: my-namespace
+  GOOGLE_KEY_PRODUCTION: <google json key>
+  CLUSTER_NAME_PRODUCTION: production-europe-west1
+  CLUSTER_ZONE_PRODUCTION: europe-west1-b
+  KUBERNETES_SCRIPT_PRODUCTION: kupdate statefulset resource-name
 ```
 
 If there is only one argument, then the resource type "deployment" is intended. Explicitly give a different resource type e.g. "statefulset" in other cases.
