@@ -35,7 +35,7 @@ helm:publish:
 
       # Check if not an empty string
       if [ ! "${BUCKET_PATH}" == "" ]; then
-      BUCKET_PATH="/${BUCKET_PATH}"
+        BUCKET_PATH="/${BUCKET_PATH}"
       fi
 
       gsutil cp gs://"${BUCKET_NAME}${BUCKET_PATH}"/index.yaml /tmp/index.yaml
