@@ -465,6 +465,7 @@ variables:
   GOOGLE_PROJECT: "my-project"
   CHARTS_URL: "https://my-chart-bucket-name.cloudstorage.provider.com"
   CHART_NAME: "my-app-chart"
+  CHART_VERSION: "1.2.3" #optional, defaults to latest in chart repo
 
 
   # QUALITY VARIABLES
