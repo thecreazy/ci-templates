@@ -96,11 +96,17 @@
       helm search repo current-repo/"${CHART_NAME}"
       echo
 
+      LATEST=$(helm search repo current-repo/"${CHART_NAME}" | tail -n 1 | awk '{print $2}')
+
+      if [ -z "${VERSION}" ]; then
+        VERSION=${LATEST}
+      fi
+
       if [ -z "${TIMEOUT}" ]; then
         TIMEOUT=600s
       fi
 
-      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}"
+      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${VERSION}
       sleep 5
       # echo
       # echo "-> App ${APP_NAME} up! Proceeding to the tests"
