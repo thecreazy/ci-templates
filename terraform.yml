@@ -1,6 +1,5 @@
-image:
-  name: hashicorp/terraform:0.12.9
-  entrypoint: [""]
+.terraform:
+  image: hashicorp/terraform:0.12.24
 
 cache:
   key: ${CI_PIPELINE_ID}
@@ -8,6 +7,7 @@ cache:
     - "${TF_FOLDER_PATH}/.terraform"
 
 validate:
+  extends: .terraform
   stage: test
   script:
     - &check |
@@ -24,6 +24,7 @@ validate:
     GIT_DEPTH: 1
 
 plan:
+  extends: .terraform
   stage: build
   script:
     - *check
@@ -40,6 +41,7 @@ plan:
     GIT_DEPTH: 1
 
 apply:
+  extends: .terraform
   stage: deploy
   script:
     - *check
