@@ -1,0 +1,42 @@
+lint:kubernetes:
+  stage: lint
+  image: garethr/kubeval:0.14.0
+  script:
+    - |
+      if [[ "${KUBEVAL_RUN_STRICT}" == "1" ]]; then
+        STRICT="--strict";
+      fi
+      if [[ -z "${KUBEVAL_K8S_VERSION}" ]]; then
+        KUBEVAL_K8S_VERSION="master";
+      fi
+
+      echo
+      echo "-> Validating secrets (if any) and manifests against kubernetes version ${KUBEVAL_K8S_VERSION} (strict: ${KUBEVAL_RUN_STRICT}):"
+      echo
+
+      if [[ ! -z ${SECRET_YAML_QUALITY} ]]; then
+        echo "${SECRET_YAML_QUALITY}" | base64 -d >> /tmp/secrets.yaml
+      fi
+
+      if [[ ! -z ${SECRET_YAML_PRODUCTION} ]]; then
+        echo "${SECRET_YAML_PRODUCTION}" | base64 -d >> /tmp/secrets.yaml
+      fi
+
+      if [[ -f "/tmp/secrets.yaml" ]]; then
+        kubeval ${STRICT} -v ${KUBEVAL_K8S_VERSION} /tmp/secrets.yaml -d ./kube
+        rm /tmp/secrets.yaml
+      else
+        echo
+        echo "Variables SECRET_YAML_QUALITY and SECRET_YAML_PRODUCTION are empty or unset!"
+        echo
+        echo "-> Only validating manifests:"
+        echo
+
+        echo "---" > /tmp/empty.yaml
+        echo "" > /tmp/empty.yaml
+        kubeval ${STRICT} -v ${KUBEVAL_K8S_VERSION} /tmp/empty.yaml -d ./kube
+      fi
+
+      echo
+      echo "-> Manifests checked!"
+      echo

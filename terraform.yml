@@ -1,40 +1,63 @@
-image:
-  name: hashicorp/terraform:0.12.9
-  entrypoint:
-    - '/usr/bin/bash'
+.terraform:
+  image: hashicorp/terraform:0.12.24
+
+cache:
+  key: ${CI_PIPELINE_ID}
+  paths:
+    - "${TF_FOLDER_PATH}/.terraform"
 
 validate:
-  stage: validate
+  extends: .terraform
+  stage: test
   script:
-    - &init |
+    - &check |
+      if [ -n "${TF_FOLDER_PATH}" ]; then
+        cd "${TF_FOLDER_PATH}"
+      fi
       terraform --version
-      terraform init
+    - terraform init -backend=false
     - terraform validate
   only:
-    - tags
-
+    - /^v.+$/i
+    - master
+    - merge_requests
+  variables:
+    GIT_DEPTH: 1
 
 plan:
+  extends: .terraform
   stage: build
   script:
-    - *init
+    - *check
+    - &init |
+      terraform init
     - terraform plan -out=plan.tfplan
   artifacts:
     name: plan
     paths:
-      - plan.tfplan
+      - "${TF_FOLDER_PATH}/plan.tfplan"
   only:
-    - tags
+    - /^v.+$/i
+  except:
+    - branches
+  variables:
+    GIT_DEPTH: 1
 
 apply:
+  extends: .terraform
   stage: deploy
   script:
+    - *check
     - *init
     - terraform apply -input=false plan.tfplan
   dependencies:
     - plan
   when: manual
   only:
-    - tags
+    - /^v.+$/i
+  except:
+    - branches
   environment:
     name: production
+  variables:
+    GIT_STRATEGY: none

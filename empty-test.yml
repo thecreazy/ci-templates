@@ -1,8 +1,0 @@
-test:
-  stage: test
-  script:
-    - echo
-    - echo "-> [WARNING] Missing test stage, please add it as soon as possible!"
-    - echo
-    - exit 1
-  allow_failure: true

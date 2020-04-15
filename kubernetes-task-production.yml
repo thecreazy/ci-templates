@@ -1,0 +1,24 @@
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.8.0/kubernetes-task-quality.yml'
+
+task:production:
+  extends: .task
+  variables:
+    NAMESPACE: ${NAMESPACE_PRODUCTION}
+    GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
+    CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
+    CLUSTER_ZONE: ${CLUSTER_ZONE_PRODUCTION}
+    KUBERNETES_SCRIPT: ${KUBERNETES_SCRIPT_PRODUCTION}
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "GOOGLE_KEY_PRODUCTION" "CLUSTER_NAME_PRODUCTION" "CLUSTER_ZONE_PRODUCTION" "KUBERNETES_SCRIPT_PRODUCTION"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  only:
+    - /^v.+$/i
+  except:
+    - branches

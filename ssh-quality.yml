@@ -1,0 +1,24 @@
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.8.0/templates/ssh.yml'
+
+ssh:quality:
+  extends: .ssh:exec
+  variables:
+    SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEYT_QUALITY}
+    SSH_USER: ${SSH_USER_QUALITY}
+    SSH_HOST: ${SSH_HOST_QUALITY}
+    SSH_COMMAND: ${SSH_COMMAND_QUALITY}
+    SSH_KNOWN_HOSTS: ${SSH_KNOWN_HOSTS_QUALITY}
+    DOMAIN: ${DOMAIN_QUALITY}
+    ENVIRONMENT: quality
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "SSH_PRIVATE_KEY_QUALITY" "SSH_USER_QUALITY" "SSH_HOST_QUALITY" "SSH_COMMAND_QUALITY"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  only:
+    - master

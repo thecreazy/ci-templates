@@ -1,0 +1,16 @@
+lint:php:
+  stage: lint
+  image: cytopia/phplint:7.3
+  script:
+    - |
+
+      echo
+      echo "-> Linting code:"
+      echo
+
+      #molto elegante..
+      /docker-entrypoint.sh *.php
+
+      echo
+      echo "-> Code checked!"
+      echo

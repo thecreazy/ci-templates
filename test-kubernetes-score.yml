@@ -1,0 +1,42 @@
+test:kubernetes-score:
+  stage: test
+  image: gdiener/ci-image-gcp:v1.0.1
+  script:
+    - |
+
+      COMMAND_TO_RUN="kube-score"
+      COMMAND_TO_RUN+=( score )
+
+      if [[ -n "${IGNORE_TESTS}" ]]; then
+        IGNORE_TESTS=( container-security-context pod-networkpolicy label-values )
+      fi
+      for ign in "${IGNORE_TESTS[@]}"; do
+        COMMAND_TO_RUN+=( --ignore-test "${ign}" )
+      done
+
+      echo
+      echo "-> Checking manifests '${CI_PROJECT_NAME}' for their security score:"
+      echo
+
+      if [[ ! -z ${SECRET_YAML_QUALITY} ]]; then
+        echo "${SECRET_YAML_QUALITY}" | base64 -d >> /tmp/secrets.yaml
+      fi
+      if [[ ! -z ${SECRET_YAML_PRODUCTION} ]]; then
+        echo "${SECRET_YAML_PRODUCTION}" | base64 -d >> /tmp/secrets.yaml
+      fi
+
+      for yaml in $(find ./kube -name *.yaml -type f -print); do
+          COMMAND_TO_RUN+=( ${yaml} )
+      done
+
+      if [[ -f "/tmp/secrets.yaml" ]]; then
+        COMMAND_TO_RUN+=( /tmp/secrets.yaml )
+      fi
+
+      "${COMMAND_TO_RUN[@]}"
+      rm /tmp/secrets.yaml
+
+      echo
+      echo "-> Manifests scored!"
+      echo
+

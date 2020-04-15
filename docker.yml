@@ -1,7 +1,229 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/gadiener/ci-templates/v1.0.2/templates/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.8.0/templates/docker.yml'
+
+build:
+  stage: build
+  extends: .docker
+  script:
+    - &connection |
+      # DOCKER LOGIN PHASE
+      echo -n "${CI_REGISTRY_PASSWORD}" | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
+    - |
+      # DOCKER BUILD PHASE
+
+      if [ -z "${IMAGES}" ]; then
+
+        COMMAND_TO_RUN=( docker build )
+
+        if [ "${SKIP_DOCKER_CACHE}" != "true" ]; then
+          COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}":latest --cache-from "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}" )
+
+          for stage in ${STAGES}; do
+            COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}":latest-"${stage}" )
+          done
+        else
+          COMMAND_TO_RUN+=( --no-cache )
+        fi
+
+        if [ -n "${BUILD_ARGS}" ]; then
+          for build_arg in ${BUILD_ARGS}; do
+            COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
+          done
+        fi
+
+        COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}" . )
+
+        "${COMMAND_TO_RUN[@]}"
+
+        docker push "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}"
+      else
+        if [ -z "${DOCKERFILES_DIR}" ]; then
+          DOCKERFILES_DIR=docker
+        fi
+
+        for image in ${IMAGES}; do
+
+          COMMAND_TO_RUN=( docker build )
+
+          if [ "${SKIP_DOCKER_CACHE}" != "true" ]; then
+            COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest" --cache-from "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}" )
+
+            for stage in ${STAGES}; do
+              COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" )
+            done
+          else
+            COMMAND_TO_RUN+=( --no-cache )
+          fi
+
+          if [ -n "${BUILD_ARGS}" ]; then
+            for build_arg in ${BUILD_ARGS}; do
+              COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
+            done
+          fi
+
+          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile . )
+
+          "${COMMAND_TO_RUN[@]}"
+
+          docker push "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}"
+        done
+      fi
+  only:
+    - /^v.+$/i
+    - master
+    - merge_requests
+
+build:cache:
+  stage: build
+  extends: .docker
+  script:
+    - *connection
+    - |
+      # DOCKER BUILD PHASE
+
+      if [ -z "${IMAGES}" ]; then
+
+        COMMAND_CACHE_FROM=()
+
+        for stage in ${STAGES}; do
+          COMMAND_TO_RUN=( docker build --target "${stage}" --cache-from "${CI_REGISTRY_IMAGE}":latest-"${stage}" )
+          COMMAND_TO_RUN+=( "${COMMAND_CACHE_FROM[@]}" )
+
+          if [ -n "${BUILD_ARGS}" ]; then
+            for build_arg in ${BUILD_ARGS}; do
+              COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
+            done
+          fi
+
+          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest-"${stage}" --build-arg BUILDKIT_INLINE_CACHE=1 . )
+
+          "${COMMAND_TO_RUN[@]}" || STATUS=1
+
+          if [ "${STATUS}" = "1" ]; then
+            echo "Missing build target stage '${stage}' in Dockerfile!"
+          else
+            docker push "${CI_REGISTRY_IMAGE}:latest-${stage}"
+            COMMAND_CACHE_FROM+=( --cache-from "${CI_REGISTRY_IMAGE}:latest-${stage}" )
+          fi
+        done
+      else
+        if [ -z "${DOCKERFILES_DIR}" ]; then
+          DOCKERFILES_DIR=docker
+        fi
+
+        for image in ${IMAGES}; do
+          COMMAND_CACHE_FROM=()
+
+          for stage in ${STAGES}; do
+
+            COMMAND_TO_RUN=( docker build --target "${stage}" --cache-from "${CI_REGISTRY_IMAGE}"/"${image}":latest-"${stage}" )
+
+            COMMAND_TO_RUN+=( "${COMMAND_CACHE_FROM[@]}" )
+
+            if [ -n "${BUILD_ARGS}" ]; then
+              for build_arg in ${BUILD_ARGS}; do
+                COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
+              done
+            fi
+
+            COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" -f ./"${DOCKERFILES_DIR}"/"${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1  . )
+
+            "${COMMAND_TO_RUN[@]}" || STATUS=1
+
+            if [ "${STATUS}" = "1" ]; then
+              echo "Missing build target stage '${stage}' in Dockerfile for ${image}!"
+            else
+              docker push "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}"
+              COMMAND_CACHE_FROM+=( --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" )
+            fi
+          done
+
+        done
+      fi
+  only:
+    - /^v.+$/i
+    - master
+    - merge_requests
+
+build:latest:
+  stage: build
+  extends: .docker
+  script:
+    - *connection
+    - |
+      # DOCKER BUILD PHASE
+
+      if [ -z "${IMAGES}" ]; then
+
+        COMMAND_TO_RUN+=( docker build --cache-from "${CI_REGISTRY_IMAGE}":latest --cache-from "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}" )
+
+        for stage in ${STAGES}; do
+          COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}:latest-${stage}" )
+        done
+
+        if [ -n "${BUILD_ARGS}" ]; then
+          for build_arg in ${BUILD_ARGS}; do
+            COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
+          done
+        fi
+
+        COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest --build-arg BUILDKIT_INLINE_CACHE=1 . )
+
+        "${COMMAND_TO_RUN[@]}"
+
+        docker push "${CI_REGISTRY_IMAGE}":latest
+      else
+        if [ -z "${DOCKERFILES_DIR}" ]; then
+          DOCKERFILES_DIR=docker
+        fi
+
+        for image in ${IMAGES}; do
+
+          COMMAND_TO_RUN=( docker build --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest" --cache-from "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}" )
+
+          for stage in ${STAGES}; do
+            COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" )
+          done
+
+          if [ -n "${BUILD_ARGS}" ]; then
+            for build_arg in ${BUILD_ARGS}; do
+              COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
+            done
+          fi
+
+          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 . )
+
+          "${COMMAND_TO_RUN[@]}"
+
+          docker push "${CI_REGISTRY_IMAGE}/${image}:latest"
+        done
+      fi
+  only:
+    - /^v.+$/i
+  except:
+    - branches
 
 push:
+  stage: push
+  extends: .docker
+  script:
+    - *connection
+    - |
+      # DOCKER PUSH PHASE
+
+      if [ -z "${IMAGES}" ]; then
+        docker pull "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}"
+        docker tag "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}" "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_TAG}"
+        docker push "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_TAG}"
+      else
+        for image in ${IMAGES}; do
+          docker pull "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_SHORT_SHA}"
+          docker tag "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_SHORT_SHA}" "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_TAG}"
+          docker push "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_TAG}"
+        done
+      fi
+  variables:
+    GIT_STRATEGY: none
   only:
     - /^v.+$/i
   except:

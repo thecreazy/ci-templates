@@ -1,0 +1,145 @@
+
+.helm:
+  image: devth/helm:v3.1.1
+
+.helm:deploy:
+  extends: .helm
+  stage: deploy
+  script:
+    - |
+      #CHECKING VARIABLES PHASE
+      for var in "GOOGLE_KEY" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "APP_NAME" "PART_OF" "GOOGLE_PROJECT" "CHARTS_URL" "CHART_NAME"; do
+          if [ -z "${!var}" ]; then
+            echo
+            echo "-> [WARNING] Missing '${var}' variable!"
+            echo
+            exit 1
+          fi
+      done
+    - |
+      # ACTIVATION  PHASE
+
+      echo "${GOOGLE_KEY}" > /tmp/key.json
+
+      gcloud auth activate-service-account --key-file /tmp/key.json
+
+      gcloud config set project "${GOOGLE_PROJECT}"
+
+      echo
+      echo "-> Google project '${GOOGLE_PROJECT}' configured!"
+      echo
+    - |
+      # CLUSTER CONNECTION PHASE
+
+      gcloud container clusters get-credentials --zone "${CLUSTER_ZONE}" "${CLUSTER_NAME}"
+
+      kubectl config set-context $(kubectl config current-context) --namespace="${NAMESPACE}"
+
+      echo
+      echo "-> Namespace '$(kubectl config view --minify --output jsonpath={..namespace})' configured!"
+      echo
+      kubectl cluster-info
+      echo
+
+    - |
+      # CHECK PATHS
+
+      if [ -z "${HELM_DIR}" ]; then
+        HELM_DIR=helm
+      fi
+
+      if [ -d "${HELM_DIR}/${ENVIRONMENT}" ]; then
+        echo
+        echo "-> Getting manifests from directory '${ENVIRONMENT}'"
+        echo
+        envsubst < "${HELM_DIR}"/"${ENVIRONMENT}"/values.yaml > /tmp/values.yaml
+      fi
+
+      if [ -n "${ENVIRONMENT_PATH}" ] && [ "${ENVIRONMENT_PATH}" != "${ENVIRONMENT}" ]; then
+          if [ -d "${HELM_DIR}/${ENVIRONMENT_PATH}" ]; then
+            echo
+            echo "-> Getting manifests from directory '${ENVIRONMENT_PATH}'"
+            echo
+            envsubst < "${HELM_DIR}"/"${ENVIRONMENT_PATH}"/values.yaml > /tmp/values.yaml
+          else
+            echo
+            echo "-> [WARNING] Enviroment directory in '${ENVIRONMENT_PATH}' doesn't exist!"
+            echo
+          fi
+      fi
+    - |
+      # SECRETS APPLICATION
+
+      if [ -n "${SECRET_YAML}" ]; then
+        touch /tmp/secrets.yaml
+
+        echo "${SECRET_YAML}" | base64 -d > /tmp/secrets.yaml
+        envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
+
+        kubectl apply -f /tmp/secrets.yaml
+
+        echo
+        echo "-> Secrets deployed!"
+        echo
+      else
+        echo
+        echo "-> Missing 'SECRET_YAML' variable!"
+        echo
+      fi
+
+    - |
+      # HELM APPLICATION
+      helm repo add current-repo "${CHARTS_URL}"
+      helm repo update
+
+      echo
+      helm search repo current-repo/"${CHART_NAME}"
+      echo
+
+      if [ -z "${CHART_VERSION}" ]; then
+        CHART_VERSION=$(helm search repo current-repo/"${CHART_NAME}" | tail -n 1 | awk '{print $2}')
+      fi
+
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
+      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION}
+      sleep 5
+      # echo
+      # echo "-> App ${APP_NAME} up! Chart version is ${CHART_VERSION}"
+      # echo
+
+      # helm test "${APP_NAME}"
+
+      echo
+      echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
+      echo
+
+    - |
+      # POST-DEPLOY HOOK
+
+      if [ -n "${AFTER_CUSTOM_APPLY_FILE_PATH}" ]; then
+        kubectl apply -f "${AFTER_CUSTOM_APPLY_FILE_PATH}" \
+          &&  echo "-> Custom post-job deployed!"
+              echo
+      fi
+
+deploy:quality:helm:
+  extends: .helm:deploy
+  only:
+    - master
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+
+
+.deploy:production:helm:
+  extends: .helm:deploy
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
