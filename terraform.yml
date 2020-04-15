@@ -18,7 +18,8 @@ validate:
     - terraform init -backend=false
     - terraform validate
   only:
-    - tags
+    - /^v.+$/i
+    - master
     - merge_requests
   variables:
     GIT_DEPTH: 1
@@ -36,7 +37,9 @@ plan:
     paths:
       - "${TF_FOLDER_PATH}/plan.tfplan"
   only:
-    - tags
+    - /^v.+$/i
+  except:
+    - branches
   variables:
     GIT_DEPTH: 1
 
@@ -51,7 +54,9 @@ apply:
     - plan
   when: manual
   only:
-    - tags
+    - /^v.+$/i
+  except:
+    - branches
   environment:
     name: production
   variables:
