@@ -5,8 +5,10 @@
 .helm:deploy:
   extends: .helm
   stage: deploy
+  variables:
+    GIT_DEPTH: 1
   script:
-    - |
+    - &checkvars |
       #CHECKING VARIABLES PHASE
       for var in "GOOGLE_KEY" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "APP_NAME" "PART_OF" "GOOGLE_PROJECT" "CHARTS_URL" "CHART_NAME"; do
           if [ -z "${!var}" ]; then
@@ -16,7 +18,7 @@
             exit 1
           fi
       done
-    - |
+    - &activate |
       # ACTIVATION  PHASE
 
       echo "${GOOGLE_KEY}" > /tmp/key.json
@@ -28,7 +30,7 @@
       echo
       echo "-> Google project '${GOOGLE_PROJECT}' configured!"
       echo
-    - |
+    - &connect |
       # CLUSTER CONNECTION PHASE
 
       gcloud container clusters get-credentials --zone "${CLUSTER_ZONE}" "${CLUSTER_NAME}"
@@ -106,11 +108,6 @@
 
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION}
       sleep 5
-      # echo
-      # echo "-> App ${APP_NAME} up! Chart version is ${CHART_VERSION}"
-      # echo
-
-      # helm test "${APP_NAME}"
 
       echo
       echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
@@ -143,3 +140,42 @@ deploy:quality:helm:
   environment:
     name: ${ENVIRONMENT_NAME}
     url: https://${DOMAIN}
+
+.verify:
+  extends: .helm
+  stage: verify
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - *checkvars #NO
+    - *activate
+    - *connect
+    - |
+      # HELM TEST
+
+      echo
+      echo "-> Testing ${APP_NAME} ! Version of the tests: ${CHART_VERSION}"
+      echo
+
+      helm test "${APP_NAME}" --logs --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
+
+
+.rollback:
+  extends: .helm
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - *activate
+    - *connect
+    - |
+      # ROLLBACK PHASE
+
+      echo
+      echo "-> Rolling back ${APP_NAME} !"
+      echo
+
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
+      helm rollback "${APP_NAME}" --wait --timeout "${TIMEOUT}"
