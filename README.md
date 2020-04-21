@@ -215,6 +215,10 @@ variables:
   SKIP_DOCKER_CACHE: "false"
 ```
 
+All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). These need to be added to `STAGES` variable. `IMAGES` variable defines the images that will be built, just delete the variable if a single image will be created. In this case the image will be named as `CI_REGISTRY_IMAGE`, othewise `CI_REGISTRY_IMAGE` will be a folder containing `IMAGES`.
+`DOCKERFILES_DIR` is used to specify a different folder containing Dockerfiles instead of the default root directory.
+
+
 ## Kubernetes quality pipeline
 
 ```yaml
