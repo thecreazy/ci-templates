@@ -147,7 +147,7 @@ deploy:quality:helm:
   variables:
     GIT_STRATEGY: none
   script:
-    - *checkvars #NO
+    - *checkvars
     - *activate
     - *connect
     - |
@@ -165,6 +165,7 @@ deploy:quality:helm:
   variables:
     GIT_STRATEGY: none
   script:
+    - *checkvars
     - *activate
     - *connect
     - |

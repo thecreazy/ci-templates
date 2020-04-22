@@ -16,7 +16,7 @@ deploy:quality:helm:
   before_script:
     - |
       # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
+      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY" "DOMAIN_QUALITY"; do
           if [ -z "${!var}" ]; then
             echo "Missing '${var}' variable!"
             exit 1
@@ -36,7 +36,7 @@ verify:quality:
   before_script:
     - |
       # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY" "APP_NAME"; do
+      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
           if [ -z "${!var}" ]; then
             echo "Missing '${var}' variable!"
             exit 1
@@ -56,7 +56,7 @@ rollback:quality:
   before_script:
     - |
       # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY" "APP_NAME"; do
+      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
           if [ -z "${!var}" ]; then
             echo "Missing '${var}' variable!"
             exit 1
