@@ -1,6 +1,6 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.8.0/docker.yml'
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.8.0/templates/helm.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.9.0/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.9.0/templates/helm.yml'
 
 deploy:quality:helm:
   variables:
@@ -16,9 +16,52 @@ deploy:quality:helm:
   before_script:
     - |
       # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY"; do
+      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY" "DOMAIN_QUALITY"; do
           if [ -z "${!var}" ]; then
             echo "Missing '${var}' variable!"
             exit 1
           fi
       done
+  only:
+    - master
+
+verify:quality:
+  extends: .verify
+  stage: verify
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
+    CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
+    CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
+    NAMESPACE: ${NAMESPACE_QUALITY}
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  only:
+    - master
+
+rollback:quality:
+  extends: .rollback
+  stage: rollback
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
+    CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
+    CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
+    NAMESPACE: ${NAMESPACE_QUALITY}
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  when: on_failure
+  only:
+    - master

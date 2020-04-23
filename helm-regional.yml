@@ -1,5 +1,5 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.8.0/helm-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.9.0/helm-quality.yml'
 
 deploy:production:helm:
   extends: .deploy:production:helm
@@ -15,9 +15,54 @@ deploy:production:helm:
   before_script:
     - |
       # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_PRODUCTION" "CLUSTER_NAME_PRODUCTION" "CLUSTER_ZONE_PRODUCTION"; do
+      for var in "GOOGLE_KEY_PRODUCTION" "CLUSTER_NAME_PRODUCTION" "CLUSTER_ZONE_PRODUCTION" "NAMESPACE_PRODUCTION" "DOMAIN_PRODUCTION"; do
           if [ -z "${!var}" ]; then
             echo "Missing '${var}' variable!"
             exit 1
           fi
       done
+
+verify:production:
+  extends: .verify
+  stage: verify
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
+    CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
+    CLUSTER_ZONE: ${CLUSTER_ZONE_PRODUCTION}
+    NAMESPACE: ${NAMESPACE_PRODUCTION}
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "GOOGLE_KEY_PRODUCTION" "CLUSTER_NAME_PRODUCTION" "CLUSTER_ZONE_PRODUCTION" "NAMESPACE_PRODUCTION"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+
+rollback:production:
+  extends: .rollback
+  stage: rollback
+  variables:
+    GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
+    CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
+    CLUSTER_ZONE: ${CLUSTER_ZONE_PRODUCTION}
+    NAMESPACE: ${NAMESPACE_PRODUCTION}
+  before_script:
+    - |
+      # CHECK VARIABLES PHASE
+      for var in "GOOGLE_KEY_PRODUCTION" "CLUSTER_NAME_PRODUCTION" "CLUSTER_ZONE_PRODUCTION" "NAMESPACE_PRODUCTION"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
+  when: on_failure
+  only:
+    - /^v.+$/i
+  except:
+    - branches

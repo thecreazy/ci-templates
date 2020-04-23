@@ -16,9 +16,8 @@ With Kubernetes:
 
 With Helm:
 
-`lint -> build -> test -> push -> deploy  -> notify`
+`lint -> build -> test -> push -> deploy -> verify -> rollback -> notify`
 
-Rollback is not necessary thanks to Helm's atomic operations (if the installing fails, Helm cleans up by itself)
 
 Our workflow:
 - A commit on master goes to quality
@@ -462,6 +461,8 @@ stages:
   - build
   - push
   - deploy
+  - verify
+  - rollback
 
 variables:
   IMAGES: "app nginx"
