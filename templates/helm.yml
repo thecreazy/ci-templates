@@ -67,7 +67,7 @@
             echo
           fi
       fi
-    - |
+
       # SECRETS APPLICATION
 
       if [ -n "${SECRET_YAML}" ]; then
@@ -87,7 +87,6 @@
         echo
       fi
 
-    - |
       # HELM APPLICATION
       helm repo add current-repo "${CHARTS_URL}"
       helm repo update
@@ -115,15 +114,6 @@
       echo
       echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
       echo
-
-    - |
-      # POST-DEPLOY HOOK
-
-      if [ -n "${AFTER_CUSTOM_APPLY_FILE_PATH}" ]; then
-        kubectl apply -f "${AFTER_CUSTOM_APPLY_FILE_PATH}" \
-          &&  echo "-> Custom post-job deployed!"
-              echo
-      fi
 
 deploy:quality:helm:
   extends: .helm:deploy
