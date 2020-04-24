@@ -34,7 +34,7 @@ lint:shell:
           -efm="%f:%l:%c: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
 
       else
-        shellcheck -f json $(find "${LINT_PATH}" -type f -name "*.sh")
+        shellcheck $(find "${LINT_PATH}" -type f -name "*.sh")
       fi
 
       echo
