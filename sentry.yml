@@ -1,32 +1,37 @@
 notify_sentry:
-  image: gdiener/ci-image-gcp:v1.0.1
+  image: getsentry/sentry-cli:1.52.3
   stage: notify
+  variables:
+    ENVIRONMENT: "production"
   script:
     - |
-      if [ -z "${SENTRY_API_URL}" ]; then
-        echo
-        echo "-> [WARNING] Missing 'SENTRY_API_URL' variable!"
-        echo
-        exit 1
-      fi
+      # CHECK VARIABLES PHASE
+      for var in "SENTRY_AUTH_TOKEN" "SENTRY_URL" "SENTRY_ORG" "SENTRY_PROJECT"; do
+          if [ -z "${!var}" ]; then
+            echo "Missing '${var}' variable!"
+            exit 1
+          fi
+      done
 
       if [ -z "${CI_COMMIT_TAG}" ]; then
         CI_COMMIT_TAG=${CI_COMMIT_SHA}
+        ENVIRONMENT="quality"
       fi
 
-      PAYLOAD="{ \"version\": \"${CI_COMMIT_TAG}\" }"
+      sentry-cli info
 
-      STATUS_CODE=$(curl -sS -o /tmp/response.txt --write-out "%{http_code}" -H 'Content-Type: application/json' -X POST -d "${PAYLOAD}" "${SENTRY_API_URL}")
-
-      if [[ "${STATUS_CODE}" -ne 201 ]] ; then
-        echo "Sentry webhook returned '${STATUS_CODE}' error!"
+      if [ -n "${FEAT_SENTRY_SETCOMMITS}" ]; then
         echo
-        echo "Response:"
-        cat /tmp/response.txt
+        echo "-> [INFO] variable 'FEAT_SENTRY_SETCOMMITS' for experimental feature enabled!"
         echo
-        echo "Payload: ${PAYLOAD}"
-        exit 1
+        sentry-cli releases new "${CI_COMMIT_TAG}"
+        sentry-cli releases set-commits "${CI_COMMIT_TAG}" --auto
+        sentry-cli releases finalize "$VERSION"
+      else
+        sentry-cli releases new --finalize "${CI_COMMIT_TAG}"
       fi
+
+      sentry-cli releases deploys "${CI_COMMIT_TAG}" new -e "${ENVIRONMENT}"
 
       echo "Sentry was notified of the change!"
   when: on_success
