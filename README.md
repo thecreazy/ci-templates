@@ -801,9 +801,15 @@ include:
 
 stages:
   - notify
+
+variables:
+  SENTRY_AUTH_TOKEN: my-sentry-user-token
+  SENTRY_URL: my-sentry.example.net
+  SENTRY_PROJECT: my-sentry-project
+  SENTRY_ORG: my-sentry-org
 ```
 
-This stage makes an API call to the project-specific sentry webhook, in order to announce a new release [as per the docs](https://docs.sentry.io/workflow/releases/?platform=javascript#using-the-api).
+This stage uses `getsentry/sentry-cli:1.52.3`, in order to announce a new release [as per the docs](https://docs.sentry.io/workflow/releases/?platform=javascript#using-the-cli).
 
 # General advices
 
