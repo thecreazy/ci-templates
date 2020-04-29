@@ -5,7 +5,7 @@ lint:docker:
     - |
 
       COMMAND_TO_RUN="hadolint"
-      COMMAND_TO_RUN+=( --trusted-registry "${CI_REGISTRY}" )
+      COMMAND_TO_RUN+=( --trusted-registry "docker.io" --trusted-registry "${CI_REGISTRY}" )
 
       if [[ -n "${IGNORE_DOCKER_LINT}" ]]; then
         IGNORE_DOCKER_LINT=( DL3012 )
