@@ -1,11 +1,11 @@
 lint:docker:
   stage: lint
-  image: hadolint/hadolint:v1.17.5-debian
+  image: linuxbandit/hadolint-reviewdog:v1.0.0
   script:
     - |
 
       COMMAND_TO_RUN="hadolint"
-      COMMAND_TO_RUN+=( --trusted-registry registry.my-company.io )
+      COMMAND_TO_RUN+=( --trusted-registry ${CI_REGISTRY} )
 
       if [[ -n "${IGNORE_DOCKER_LINT}" ]]; then
         IGNORE_DOCKER_LINT=( DL3012 )
@@ -27,13 +27,44 @@ lint:docker:
       echo "-> Linting Dockerfile:"
       echo
 
-      "${FINAL_COMMAND[@]}"
-      if [[ ! -z "${EXTRA_COMMAND}" ]]; then
+      if [ "${ENABLE_REVIEWDOG}" = "1" ]; then
+
         echo
-        echo "-> Linting support Dockerfile:"
+        echo "-> Enabled Review Dog!"
         echo
-        "${EXTRA_COMMAND[@]}"
+
+        if [ -z "${REVIEWDOG_GITLAB_API_TOKEN}" ]; then
+          echo
+          echo "-> [WARNING] Missing 'REVIEWDOG_GITLAB_API_TOKEN' variable!"
+          echo
+          exit 1
+        fi
+
+        if [ -z "${REVIEWDOG_LEVEL}" ]; then
+          REVIEWDOG_LEVEL="warning"
+        fi
+
+        "${FINAL_COMMAND[@]}" | reviewdog -name="Hadolint linter" \
+          -efm="%f:%l: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
+        if [[ ! -z "${EXTRA_COMMAND}" ]]; then
+          echo
+          echo "-> Linting support Dockerfile:"
+          echo
+          "${EXTRA_COMMAND[@]}" | reviewdog -name="Hadolint linter - support Dockerfile" \
+            -efm="%f:%l: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
+        fi
+
       else
+
+        "${FINAL_COMMAND[@]}"
+        if [[ ! -z "${EXTRA_COMMAND}" ]]; then
+          echo
+          echo "-> Linting support Dockerfile:"
+          echo
+          "${EXTRA_COMMAND[@]}"
+        fi
+
+      fi
 
       echo
       echo "-> Dockerfile(s) checked!"
