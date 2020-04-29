@@ -5,7 +5,7 @@ lint:docker:
     - |
 
       COMMAND_TO_RUN="hadolint"
-      COMMAND_TO_RUN+=( --trusted-registry ${CI_REGISTRY} )
+      COMMAND_TO_RUN+=( --trusted-registry "${CI_REGISTRY}" )
 
       if [[ -n "${IGNORE_DOCKER_LINT}" ]]; then
         IGNORE_DOCKER_LINT=( DL3012 )
@@ -14,13 +14,18 @@ lint:docker:
         COMMAND_TO_RUN+=( --ignore "${ign}" )
       done
 
-      FINAL_COMMAND=${COMMAND_TO_RUN}
+      # Find docker files in a way similar to docker.yml
 
-      if [[ -f "Dockerfile" ]]; then
-        FINAL_COMMAND+=( ./Dockerfile )
+      if [ -z "${IMAGES}" ]; then
+        COMMAND_TO_RUN+=( ./Dockerfile )
       else
-        FINAL_COMMAND+=( ./docker/app/Dockerfile )
-        EXTRA_COMMAND+=( ${COMMAND_TO_RUN} ./docker/nginx/Dockerfile )
+        if [ -z "${DOCKERFILES_DIR}" ]; then
+          DOCKERFILES_DIR=docker
+        fi
+
+        for image in ${IMAGES[@]}; do
+          COMMAND_TO_RUN+=( ./"${DOCKERFILES_DIR}/${image}"/Dockerfile )
+        done
       fi
 
       echo
@@ -44,26 +49,11 @@ lint:docker:
           REVIEWDOG_LEVEL="warning"
         fi
 
-        "${FINAL_COMMAND[@]}" | reviewdog -name="Hadolint linter" \
+        "${COMMAND_TO_RUN[@]}" | reviewdog -name="Hadolint linter" \
           -efm="%f:%l: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
-        if [[ ! -z "${EXTRA_COMMAND}" ]]; then
-          echo
-          echo "-> Linting support Dockerfile:"
-          echo
-          "${EXTRA_COMMAND[@]}" | reviewdog -name="Hadolint linter - support Dockerfile" \
-            -efm="%f:%l: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
-        fi
 
       else
-
-        "${FINAL_COMMAND[@]}"
-        if [[ ! -z "${EXTRA_COMMAND}" ]]; then
-          echo
-          echo "-> Linting support Dockerfile:"
-          echo
-          "${EXTRA_COMMAND[@]}"
-        fi
-
+        "${COMMAND_TO_RUN[@]}"
       fi
 
       echo
