@@ -16,9 +16,8 @@ With Kubernetes:
 
 With Helm:
 
-`lint -> build -> test -> push -> deploy  -> notify`
+`lint -> build -> test -> push -> deploy -> verify -> rollback -> notify`
 
-Rollback is not necessary thanks to Helm's atomic operations (if the installing fails, Helm cleans up by itself)
 
 Our workflow:
 - A commit on master goes to quality
@@ -181,6 +180,22 @@ See [here](https://github.com/zegl/kube-score/blob/master/README_CHECKS.md) for 
 
 NB: The test `label_values` needs to be skipped because of the values `${CI_COMMIT_TAG}` (which will be replaced by `envsubst` later in the pipeline) causing validation fail.
 
+### Linting shell files
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/lint-shell.yml'
+
+stages:
+  - lint
+
+variables:
+  # optional, used to enable reviewdog
+  ENABLE_REVIEWDOG: 1
+  REVIEWDOG_GITLAB_API_TOKEN: <personal gitlab token used to call v4 api endpoints>
+  REVIEWDOG_LEVEL: warning # optional, values: info, warning, error
+```
+
 # Unit test stage
 
 ```yaml
@@ -214,6 +229,10 @@ variables:
   DOCKERFILES_DIR: "docker"
   SKIP_DOCKER_CACHE: "false"
 ```
+
+All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). These need to be added to `STAGES` variable. `IMAGES` variable defines the images that will be built, just delete the variable if a single image will be created. In this case the image will be named as `CI_REGISTRY_IMAGE`, othewise `CI_REGISTRY_IMAGE` will be a folder containing `IMAGES`.
+`DOCKERFILES_DIR` is used to specify a different folder containing Dockerfiles instead of the default root directory.
+
 
 ## Kubernetes quality pipeline
 
@@ -458,6 +477,8 @@ stages:
   - build
   - push
   - deploy
+  - verify
+  - rollback
 
 variables:
   IMAGES: "app nginx"
@@ -780,9 +801,15 @@ include:
 
 stages:
   - notify
+
+variables:
+  SENTRY_AUTH_TOKEN: my-sentry-user-token
+  SENTRY_URL: my-sentry.example.net
+  SENTRY_PROJECT: my-sentry-project
+  SENTRY_ORG: my-sentry-org
 ```
 
-This stage makes an API call to the project-specific sentry webhook, in order to announce a new release [as per the docs](https://docs.sentry.io/workflow/releases/?platform=javascript#using-the-api).
+This stage uses `getsentry/sentry-cli:1.52.3`, in order to announce a new release [as per the docs](https://docs.sentry.io/workflow/releases/?platform=javascript#using-the-cli).
 
 # General advices
 

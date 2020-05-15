@@ -1,11 +1,11 @@
 lint:docker:
   stage: lint
-  image: hadolint/hadolint:v1.17.5-debian
+  image: linuxbandit/hadolint-reviewdog:v1.0.0
   script:
     - |
 
       COMMAND_TO_RUN="hadolint"
-      COMMAND_TO_RUN+=( --trusted-registry registry.my-company.io )
+      COMMAND_TO_RUN+=( --trusted-registry "docker.io" --trusted-registry "${CI_REGISTRY}" )
 
       if [[ -n "${IGNORE_DOCKER_LINT}" ]]; then
         IGNORE_DOCKER_LINT=( DL3012 )
@@ -14,26 +14,47 @@ lint:docker:
         COMMAND_TO_RUN+=( --ignore "${ign}" )
       done
 
-      FINAL_COMMAND=${COMMAND_TO_RUN}
+      # Find docker files in a way similar to docker.yml
 
-      if [[ -f "Dockerfile" ]]; then
-        FINAL_COMMAND+=( ./Dockerfile )
+      if [ -z "${IMAGES}" ]; then
+        COMMAND_TO_RUN+=( ./Dockerfile )
       else
-        FINAL_COMMAND+=( ./docker/app/Dockerfile )
-        EXTRA_COMMAND+=( ${COMMAND_TO_RUN} ./docker/nginx/Dockerfile )
+        if [ -z "${DOCKERFILES_DIR}" ]; then
+          DOCKERFILES_DIR=docker
+        fi
+
+        for image in ${IMAGES[@]}; do
+          COMMAND_TO_RUN+=( ./"${DOCKERFILES_DIR}/${image}"/Dockerfile )
+        done
       fi
 
       echo
       echo "-> Linting Dockerfile:"
       echo
 
-      "${FINAL_COMMAND[@]}"
-      if [[ ! -z "${EXTRA_COMMAND}" ]]; then
+      if [ "${ENABLE_REVIEWDOG}" = "1" ]; then
+
         echo
-        echo "-> Linting support Dockerfile:"
+        echo "-> Enabled Review Dog!"
         echo
-        "${EXTRA_COMMAND[@]}"
+
+        if [ -z "${REVIEWDOG_GITLAB_API_TOKEN}" ]; then
+          echo
+          echo "-> [WARNING] Missing 'REVIEWDOG_GITLAB_API_TOKEN' variable!"
+          echo
+          exit 1
+        fi
+
+        if [ -z "${REVIEWDOG_LEVEL}" ]; then
+          REVIEWDOG_LEVEL="warning"
+        fi
+
+        "${COMMAND_TO_RUN[@]}" | reviewdog -name="Hadolint linter" \
+          -efm="%f:%l: %m" -diff="git diff master" -reporter=gitlab-mr-discussion -level="${INPUT_LEVEL}"
+
       else
+        "${COMMAND_TO_RUN[@]}"
+      fi
 
       echo
       echo "-> Dockerfile(s) checked!"
