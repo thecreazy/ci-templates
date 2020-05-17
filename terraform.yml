@@ -1,5 +1,7 @@
 .terraform:
-  image: hashicorp/terraform:0.12.24
+  image:
+    name: hashicorp/terraform:0.12.24
+    entrypoint: [""]
 
 cache:
   key: ${CI_PIPELINE_ID}
