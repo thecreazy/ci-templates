@@ -26,3 +26,7 @@ test:unit:
       # TEST
       docker-compose -f "${COMPOSE_FILE_NAME}" pull
       docker-compose -f "${COMPOSE_FILE_NAME}" up --remove-orphans --abort-on-container-exit --exit-code-from "${TEST_CONTAINER_NAME}"
+  only:
+    - /^v.+$/i
+    - master
+    - merge_requests
