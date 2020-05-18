@@ -3,6 +3,7 @@ include:
   - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.12.0/templates/kubernetes.yml'
 
 deploy:quality:image:
+  extends: .deploy:image
   variables:
     CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
@@ -22,8 +23,14 @@ deploy:quality:image:
             exit 1
           fi
       done
+  only:
+    - master
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 deploy:quality:manifest:
+  extends: .deploy:manifest
   variables:
     CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
@@ -44,6 +51,11 @@ deploy:quality:manifest:
           fi
       done
   when: manual
+  only:
+    - master
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 rollback:quality:
   extends: .rollback
