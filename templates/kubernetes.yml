@@ -288,6 +288,7 @@
 
 .rollback:
   image: gdiener/ci-image-gcp:v1.0.1
+  stage: rollback
   script:
     - *connection
     - |

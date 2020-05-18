@@ -63,7 +63,6 @@ deploy:production:europe:manifest:
 
 rollback:production:europe:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_EUROPE}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_EUROPE}
@@ -146,7 +145,6 @@ deploy:production:america:manifest:
 
 rollback:production:america:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_AMERICA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_AMERICA}
@@ -229,7 +227,6 @@ deploy:production:asia:manifest:
 
 rollback:production:asia:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_ASIA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_ASIA}

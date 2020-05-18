@@ -60,7 +60,6 @@ deploy:production:manifest:
 
 rollback:production:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
