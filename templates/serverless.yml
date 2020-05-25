@@ -1,5 +1,5 @@
 .serverless:deploy:
-  image: gdiener/ci-image-gcp:v1.0.1
+  image: gdiener/ci-image-gcp:v1.1.0
   stage: deploy
   script:
     - &connection |
@@ -114,7 +114,7 @@
       ${COMMAND_TO_RUN[@]} || STATUS=1
 
       if [ "${STATUS}" = "1" ]; then
-        gcloud functions describe --region=${REGION} ${FUNCTION_NAME}
+        gcloud functions describe --region=${REGION} ${FUNCTION_NAME} | yq - delete 'environmentVariables'
       fi
 
       exit ${STATUS}
