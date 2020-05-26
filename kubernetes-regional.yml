@@ -1,8 +1,8 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.12.4/kubernetes-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.13.0/kubernetes-quality.yml'
 
 deploy:production:image:
-  extends: .deploy:production:image
+  extends: .deploy:image
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
@@ -21,9 +21,16 @@ deploy:production:image:
             exit 1
           fi
       done
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 deploy:production:manifest:
-  extends: .deploy:production:manifest
+  extends: .deploy:manifest
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}
@@ -43,10 +50,16 @@ deploy:production:manifest:
           fi
       done
   when: manual
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 rollback:production:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION}

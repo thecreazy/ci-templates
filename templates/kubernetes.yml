@@ -286,44 +286,9 @@
   variables:
     GIT_DEPTH: 1
 
-deploy:quality:image:
-  extends: .deploy:image
-  only:
-    - master
-  environment:
-    name: ${ENVIRONMENT_NAME}
-    url: https://${DOMAIN}
-
-deploy:quality:manifest:
-  extends: .deploy:manifest
-  only:
-    - master
-  environment:
-    name: ${ENVIRONMENT_NAME}
-    url: https://${DOMAIN}
-
-.deploy:production:image:
-  extends: .deploy:image
-  only:
-    - /^v.+$/i
-  except:
-    - branches
-  environment:
-    name: ${ENVIRONMENT_NAME}
-    url: https://${DOMAIN}
-
-.deploy:production:manifest:
-  extends: .deploy:manifest
-  only:
-    - /^v.+$/i
-  except:
-    - branches
-  environment:
-    name: ${ENVIRONMENT_NAME}
-    url: https://${DOMAIN}
-
 .rollback:
   image: gdiener/ci-image-gcp:v1.0.1
+  stage: rollback
   script:
     - *connection
     - |

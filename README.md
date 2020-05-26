@@ -121,7 +121,7 @@ will import the code from another Gitlab project
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v1.1.0/test-unit.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/test-unit.yml'
 ```
 
 will import the code from an external repository; notice ref and filename are embedded into the URL.

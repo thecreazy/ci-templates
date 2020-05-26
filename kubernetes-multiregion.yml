@@ -1,9 +1,9 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.12.4/kubernetes-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.13.0/kubernetes-quality.yml'
 
 # EUROPE
 deploy:production:europe:image:
-  extends: .deploy:production:image
+  extends: .deploy:image
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_EUROPE}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_EUROPE}
@@ -23,9 +23,16 @@ deploy:production:europe:image:
             exit 1
           fi
       done
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 deploy:production:europe:manifest:
-  extends: .deploy:production:manifest
+  extends: .deploy:manifest
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_EUROPE}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_EUROPE}
@@ -46,10 +53,16 @@ deploy:production:europe:manifest:
           fi
       done
   when: manual
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 rollback:production:europe:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_EUROPE}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_EUROPE}
@@ -72,7 +85,7 @@ rollback:production:europe:
 
 # AMERICA
 deploy:production:america:image:
-  extends: .deploy:production:image
+  extends: .deploy:image
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_AMERICA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_AMERICA}
@@ -92,9 +105,16 @@ deploy:production:america:image:
             exit 1
           fi
       done
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 deploy:production:america:manifest:
-  extends: .deploy:production:manifest
+  extends: .deploy:manifest
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_AMERICA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_AMERICA}
@@ -115,10 +135,16 @@ deploy:production:america:manifest:
           fi
       done
   when: manual
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 rollback:production:america:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_AMERICA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_AMERICA}
@@ -141,7 +167,7 @@ rollback:production:america:
 
 # ASIA
 deploy:production:asia:image:
-  extends: .deploy:production:image
+  extends: .deploy:image
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_ASIA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_ASIA}
@@ -161,9 +187,16 @@ deploy:production:asia:image:
             exit 1
           fi
       done
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 deploy:production:asia:manifest:
-  extends: .deploy:production:manifest
+  extends: .deploy:manifest
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_ASIA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_ASIA}
@@ -184,10 +217,16 @@ deploy:production:asia:manifest:
           fi
       done
   when: manual
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
 
 rollback:production:asia:
   extends: .rollback
-  stage: rollback
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_ASIA}
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_ASIA}

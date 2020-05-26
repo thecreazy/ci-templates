@@ -1,5 +1,7 @@
 .terraform:
-  image: hashicorp/terraform:0.12.24
+  image:
+    name: hashicorp/terraform:0.12.24
+    entrypoint: [""]
 
 cache:
   key: ${CI_PIPELINE_ID}
@@ -60,4 +62,4 @@ apply:
   environment:
     name: production
   variables:
-    GIT_STRATEGY: none
+    GIT_DEPTH: 1
