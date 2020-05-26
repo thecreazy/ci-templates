@@ -50,7 +50,7 @@
 
       BUCKET_FULL_PATH="gs:/$(echo "/${BUCKET_NAME}/${BUCKET_PATH}/" | tr -s /)"
 
-      COMMAND_TO_RUN+=( -d -J -r "${DIR_TO_SYNC}" "${BUCKET_FULL_PATH}" )
+      COMMAND_TO_RUN+=( -D -J -r "${DIR_TO_SYNC}" "${BUCKET_FULL_PATH}" )
 
       "${COMMAND_TO_RUN[@]}"
 

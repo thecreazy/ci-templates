@@ -147,6 +147,10 @@ deploy:quality:helm:
       echo "-> Testing ${APP_NAME} ! Version of the tests: ${CHART_VERSION}"
       echo
 
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
       helm test "${APP_NAME}" --logs --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
 
 
