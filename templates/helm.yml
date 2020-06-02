@@ -133,7 +133,6 @@ deploy:quality:helm:
 
 .verify:
   extends: .helm
-  stage: verify
   variables:
     GIT_STRATEGY: none
   script:
@@ -151,18 +150,9 @@ deploy:quality:helm:
         TIMEOUT=600s
       fi
 
-      helm test "${APP_NAME}" --logs --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
+      helm test "${APP_NAME}" --logs --timeout "${TIMEOUT}" --namespace "${NAMESPACE}" \
+        && exit 0;
 
-
-.rollback:
-  extends: .helm
-  variables:
-    GIT_STRATEGY: none
-  script:
-    - *checkvars
-    - *activate
-    - *connect
-    - |
       # ROLLBACK PHASE
 
       echo
