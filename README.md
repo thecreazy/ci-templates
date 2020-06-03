@@ -16,7 +16,7 @@ With Kubernetes:
 
 With Helm:
 
-`lint -> build -> test -> push -> deploy -> verify -> rollback -> notify`
+`lint -> build -> test -> push -> deploy -> verify -> notify`
 
 
 Our workflow:
@@ -478,7 +478,6 @@ stages:
   - push
   - deploy
   - verify
-  - rollback
 
 variables:
   IMAGES: "app nginx"
