@@ -168,4 +168,6 @@ deploy:quality:helm:
         echo
 
         helm rollback "${APP_NAME}" --wait --timeout "${TIMEOUT}"
+
+        exit 1
       fi
