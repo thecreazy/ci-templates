@@ -150,17 +150,22 @@ deploy:quality:helm:
         TIMEOUT=600s
       fi
 
+      STATUS=0
+
       helm test "${APP_NAME}" --logs --timeout "${TIMEOUT}" --namespace "${NAMESPACE}" \
-        && exit 0;
+        || STATUS=1;
 
-      # ROLLBACK PHASE
 
-      echo
-      echo "-> Rolling back ${APP_NAME} !"
-      echo
+      if [ "${STATUS}" = "1" ]; then
+        echo
+        echo "-> Tests have failed on ${ENVIRONMENT} for '${APP_NAME}' !"
+        echo
 
-      if [ -z "${TIMEOUT}" ]; then
-        TIMEOUT=600s
+        # ROLLBACK PHASE
+
+        echo
+        echo "-> Rolling back ${APP_NAME} !"
+        echo
+
+        helm rollback "${APP_NAME}" --wait --timeout "${TIMEOUT}"
       fi
-
-      helm rollback "${APP_NAME}" --wait --timeout "${TIMEOUT}"
