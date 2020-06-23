@@ -52,7 +52,7 @@ dataflow:deploy:
         COMMAND_TO_RUN+=( ${EXTRA_ARGUMENTS} )
       fi
 
-      sbt "${COMMAND_TO_RUN[@]}"
+      sbt "${COMMAND_TO_RUN[*]}"
 
       echo
       echo "-> Deploy of '${TEMPLATE_NAME}' completed!"
