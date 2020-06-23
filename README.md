@@ -777,7 +777,7 @@ variables:
   TEMPLATE_NAME: my-template
   GOOGLE_PROJECT: my-project
   STAGING_LOCATION: gs://bucket
-  TEMP_LOCATION: gs://bucket
+  TEMPORARY_LOCATION: gs://bucket
   TEMPLATE_LOCATION: gs://bucket
   EXTRA_ARGUMENTS: "--args1=value1 --args2=value2"
 ```

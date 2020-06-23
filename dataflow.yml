@@ -4,7 +4,7 @@ dataflow:deploy:
   script:
     - &connection |
       # CLUSTER CONNECTION PHASE
-      for var in "GOOGLE_KEY" "GOOGLE_PROJECT" "TEMPLATE_NAME" "STAGING_LOCATION" "TEMP_LOCATION" "TEMPLATE_LOCATION" ; do
+      for var in "GOOGLE_KEY" "GOOGLE_PROJECT" "TEMPLATE_NAME" "STAGING_LOCATION" "TEMPORARY_LOCATION" "TEMPLATE_LOCATION" ; do
           if [ -z "${!var}" ]; then
             echo
             echo "-> [WARNING] Missing '${var}' variable!"
@@ -33,10 +33,10 @@ dataflow:deploy:
       COMMAND_TO_RUN+=( --stagingLocation=${STAGING_LOCATION} )
 
       echo
-      echo "-> Setting '${TEMP_LOCATION}' temporary location!"
+      echo "-> Setting '${TEMPORARY_LOCATION}' temporary location!"
       echo
 
-      COMMAND_TO_RUN+=( --tempLocation=${TEMP_LOCATION} )
+      COMMAND_TO_RUN+=( --tempLocation=${TEMPORARY_LOCATION} )
 
       echo
       echo "-> Setting '${TEMPLATE_LOCATION}' template location!"
