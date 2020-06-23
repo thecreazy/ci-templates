@@ -1,6 +1,6 @@
 dataflow:deploy:
   stage: deploy
-  image: hseeberger/scala-sbt:8u242_1.3.8_2.12.10
+  image: gadiener/sbt-with-gcloud:v1.0.0
   script:
     - &connection |
       # CLUSTER CONNECTION PHASE
