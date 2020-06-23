@@ -98,6 +98,7 @@ According to the operation / the type of pipeline you have to perform, you can p
   - [Multi-regional deployment](#google-function-multiregion-pipeline)
 - [Google endpoint](#google-endpoint)
 - [Google cloud run](#google-cloud-run)
+- [Google dataflow](#dataflow)
 - [Terraform pipeline](#terraform-pipeline)
 - [Terraform security check](#terraform-security-score)
 - [Notify sentry of release](#notify-sentry-of-release)
@@ -760,6 +761,25 @@ variables:
   MEMORY: "128M"
   MAX_INSTANCES: "3"
   ENV: "KEY1=value1,KEY2=value2"
+```
+
+## Google Dataflow
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/dataflow.yml'
+
+stages:
+  - deploy
+
+variables:
+  GOOGLE_KEY: <google json key>
+  TEMPLATE_NAME: my-template
+  GOOGLE_PROJECT: my-project
+  STAGING_LOCATION: gs://bucket
+  TEMPORARY_LOCATION: gs://bucket
+  TEMPLATE_LOCATION: gs://bucket
+  EXTRA_ARGUMENTS: "--args1=value1 --args2=value2"
 ```
 
 ## Terraform pipeline
