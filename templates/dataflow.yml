@@ -1,4 +1,4 @@
-dataflow:deploy:
+.deploy:dataflow:
   stage: deploy
   image: gdiener/sbt-with-gcloud:v1.0.0
   script:
@@ -57,11 +57,5 @@ dataflow:deploy:
       echo
       echo "-> Deploy of '${TEMPLATE_NAME}' completed!"
       echo
-  environment:
-    name: production
-  only:
-    - /^v.+$/i
-  except:
-    - branches
   variables:
     GIT_DEPTH: 1
