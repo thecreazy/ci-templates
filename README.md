@@ -767,19 +767,27 @@ variables:
 
 ```yaml
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/dataflow.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/dataflow-production.yml'
 
 stages:
   - deploy
 
 variables:
-  GOOGLE_KEY: <google json key>
-  TEMPLATE_NAME: my-template
   GOOGLE_PROJECT: my-project
-  STAGING_LOCATION: gs://bucket
-  TEMPORARY_LOCATION: gs://bucket
-  TEMPLATE_LOCATION: gs://bucket
-  EXTRA_ARGUMENTS: "--args1=value1 --args2=value2"
+
+  GOOGLE_KEY_QUALITY: <google json key>
+  TEMPLATE_NAME_QUALITY: my-template
+  STAGING_LOCATION_QUALITY: gs://bucket
+  TEMPORARY_LOCATION_QUALITY: gs://bucket
+  TEMPLATE_LOCATION_QUALITY: gs://bucket
+  EXTRA_ARGUMENTS_QUALITY: "--args1=value1 --args2=value2"
+
+  GOOGLE_KEY_PRODUCTION: <google json key>
+  TEMPLATE_NAME_PRODUCTION: my-template
+  STAGING_LOCATION_PRODUCTION: gs://bucket
+  TEMPORARY_LOCATION_PRODUCTION: gs://bucket
+  TEMPLATE_LOCATION_PRODUCTION: gs://bucket
+  EXTRA_ARGUMENTS_PRODUCTION: "--args1=value1 --args2=value2"
 ```
 
 ## Terraform pipeline
