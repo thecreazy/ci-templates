@@ -59,3 +59,4 @@
       echo
   variables:
     GIT_DEPTH: 1
+    GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
