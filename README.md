@@ -618,6 +618,7 @@ variables:
   TRIGGER_HTTP: 1
   TIMEOUT: 30
   ENTRYPOINT: main
+  EXTRA_FLAGS: "--vpc-connector serverless" # In case there are specific flags/features to use
 
   # QUALITY VARIABLES
   SERVICE_ACCOUNT_QUALITY: default
@@ -644,6 +645,7 @@ variables:
   TRIGGER_HTTP: 1
   TIMEOUT: 30
   ENTRYPOINT: main
+  EXTRA_FLAGS: "--vpc-connector serverless" # In case there are specific flags/features to use
 
   # QUALITY VARIABLES
   SERVICE_ACCOUNT_QUALITY: default
@@ -680,6 +682,7 @@ variables:
   TRIGGER_HTTP: 1
   TIMEOUT: 30
   ENTRYPOINT: main
+  EXTRA_FLAGS: "--vpc-connector serverless" # In case there are specific flags/features to use
 
   # QUALITY VARIABLES
   SERVICE_ACCOUNT_QUALITY: default
