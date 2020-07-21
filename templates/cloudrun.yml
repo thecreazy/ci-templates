@@ -21,15 +21,6 @@
     - |
       # DEPLOY PHASE
 
-      # Useless for now: gcloud run does not have a way to take cm/sec
-      # echo
-      # echo "-> Deploying kubernetes secrets and configmaps"
-      # echo
-
-      # echo ${SECRET_YAML} > kube/secret.yaml
-      # kubectl apply -f kube/configmap.yaml --namespace=${NAMESPACE}
-      # kubectl apply -f kube/secret.yaml --namespace=${NAMESPACE}
-
       echo
       echo "-> Deploying cloudrun service '${SERVICE_NAME}' with tag '${CI_COMMIT_TAG}'"
       echo
@@ -102,6 +93,29 @@
         echo
 
         COMMAND_TO_RUN+=( --set-env-vars=${ENV} )
+      fi
+
+      if [ -n "${SECRET_YAML}" ]; then
+
+        echo
+        echo "-> ... also deploying kubernetes secrets"
+        echo
+
+        echo "${SECRET_YAML}" > kube/secret.yaml
+        kubectl apply -f kube/secret.yaml --namespace=${NAMESPACE}
+
+        COMMAND_TO_RUN+=( --set-secrets=[${SECRET_MOUNTS}] )
+      fi
+
+      if [ -f "kube/configmap.yaml" ]; then
+
+        echo
+        echo "-> ... also deploying kubernetes configmaps"
+        echo
+
+        kubectl apply -f kube/configmap.yaml --namespace=${NAMESPACE}
+
+        COMMAND_TO_RUN+=( --set-config-maps=[${CONFIGMAP_MOUNTS}] )
       fi
 
       STATUS=0
