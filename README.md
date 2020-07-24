@@ -742,6 +742,8 @@ variables:
 
 ## Google Cloud Run
 
+Note: for now this stage is configured with a pattern different from the others (i.e. no `CLUSTER_NAME`{_QUALITY|_PRODUCTION}). It will be corrected soon.
+
 ```yaml
 include:
   - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/cloudrun-production.yml'
@@ -754,17 +756,29 @@ variables:
   GOOGLE_KEY_PRODUCTION: <google json key>
   GOOGLE_PROJECT: my-project
   SERVICE_NAME: awesome-service
-  NAMESPACE: awesome-service
-  CLUSTER_NAME: quality
-  CLUSTER_ZONE: europe-west1b
+  NAMESPACE: my-k8s-namespace-where-cloudrun-is
   CONNECTIVITY: "external"
   TIMEOUT: "60s"
   CONCURRENCY: "80"
   CPU: "1000m"
   MEMORY: "128M"
   MAX_INSTANCES: "3"
-  ENV: "KEY1=value1,KEY2=value2"
+  SECRET_MOUNTS: "/secrets=myapp-serviceaccounts"
+
+deploy:quality:
+  variables:
+    CLUSTER_NAME: "quality"
+    CLUSTER_ZONE: "europe-west1-b"
+    ENV: "KEY1=value1,KEY2=value2"
+
+deploy:production:
+  variables:
+    CLUSTER_NAME: "production"
+    CLUSTER_ZONE: "europe-west1-b"
+    ENV: "KEY1=valueProd1,KEY2=valueProd2"
 ```
+
+Read more detail about how to mount secrets/configmaps [here](https://github.com/jobtome-labs/ci-templates/pull/47)
 
 ## Google Dataflow
 
