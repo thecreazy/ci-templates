@@ -97,7 +97,9 @@ According to the operation / the type of pipeline you have to perform, you can p
   - [Regional deployment](#google-function-regional-pipeline)
   - [Multi-regional deployment](#google-function-multiregion-pipeline)
 - [Google endpoint](#google-endpoint)
-- [Google cloud run](#google-cloud-run)
+- Google cloud run
+  - [Quality pipeline](#google-cloud-run-quality)
+  - [Production pipeline](#google-cloud-run-production)
 - [Google dataflow](#dataflow)
 - [Terraform pipeline](#terraform-pipeline)
 - [Terraform security check](#terraform-security-score)
@@ -739,8 +741,38 @@ variables:
   ENDPOINT_FILE: endpoint.yaml
   GOOGLE_KEY: <google json key>
 ```
+## Google Cloud Run Quality
 
-## Google Cloud Run
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/cloudrun-quality.yml'
+
+stages:
+  - deploy
+
+variables:
+  GOOGLE_KEY_QUALITY: <google json key>
+  GOOGLE_PROJECT: my-project
+  CLUSTER_NAME_QUALITY: "quality"
+  CLUSTER_ZONE_QUALITY: "europe-west1-b"
+  NAMESPACE: my-k8s-namespace-where-cloudrun-is
+  SERVICE_NAME: awesome-service
+  CONNECTIVITY: "external"
+  TIMEOUT: "60s"
+  CONCURRENCY: "80"
+  CPU: "1000m"
+  MEMORY: "128M"
+  MAX_INSTANCES: "3"
+  ENV_QUALITY: "KEY1=value1,KEY2=value2"
+  SECRET_YAML_QUALITY: <some b64 of a secret called myapp-serviceaccounts>
+  SECRET_MOUNTS: "/secrets=myapp-serviceaccounts"
+  CONFIGMAP_PATH_QUALITY: <a path in this repo containing the definition of a configmap called myapp-configmap>
+  CONFIGMAP_MOUNTS: "/configs=myapp-configmap"
+```
+
+Read more detail about how to mount secrets/configmaps [here](https://github.com/jobtome-labs/ci-templates/pull/47)
+
+## Google Cloud Run Production
 
 ```yaml
 include:
@@ -753,18 +785,29 @@ variables:
   GOOGLE_KEY_QUALITY: <google json key>
   GOOGLE_KEY_PRODUCTION: <google json key>
   GOOGLE_PROJECT: my-project
+  CLUSTER_NAME_QUALITY: "quality"
+  CLUSTER_ZONE_QUALITY: "europe-west1-b"
+  CLUSTER_NAME_PRODUCTION: "production"
+  CLUSTER_ZONE_PRODUCTION: "europe-west1-b"
+  NAMESPACE: my-k8s-namespace-where-cloudrun-is
   SERVICE_NAME: awesome-service
-  NAMESPACE: awesome-service
-  CLUSTER_NAME: quality
-  CLUSTER_ZONE: europe-west1b
   CONNECTIVITY: "external"
   TIMEOUT: "60s"
   CONCURRENCY: "80"
   CPU: "1000m"
   MEMORY: "128M"
   MAX_INSTANCES: "3"
-  ENV: "KEY1=value1,KEY2=value2"
+  ENV_QUALITY: "KEY1=value1,KEY2=value2"
+  ENV_PRODUCTION: "KEY1=valueProd1,KEY2=valueProd2"
+  SECRET_YAML_QUALITY: <some b64 of a secret called myapp-serviceaccounts>
+  SECRET_YAML_PRODUCTION: <some b64 of a secret called myapp-serviceaccounts>
+  SECRET_MOUNTS: "/secrets=myapp-serviceaccounts"
+  CONFIGMAP_PATH_QUALITY: <a path in this repo containing the definition of a configmap called myapp-configmap>
+  CONFIGMAP_PATH_PRODUCTION: <a path in this repo containing the definition of a configmap called myapp-configmap>
+  CONFIGMAP_MOUNTS: "/configs=myapp-configmap"
 ```
+
+Read more detail about how to mount secrets/configmaps [here](https://github.com/jobtome-labs/ci-templates/pull/47)
 
 ## Google Dataflow
 
