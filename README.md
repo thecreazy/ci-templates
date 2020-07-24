@@ -766,6 +766,8 @@ variables:
   ENV_QUALITY: "KEY1=value1,KEY2=value2"
   SECRET_YAML_QUALITY: <some b64 of a secret called myapp-serviceaccounts>
   SECRET_MOUNTS: "/secrets=myapp-serviceaccounts"
+  CONFIGMAP_PATH_QUALITY: <a path in this repo containing the definition of a configmap called myapp-configmap>
+  CONFIGMAP_MOUNTS: "/configs=myapp-configmap"
 ```
 
 Read more detail about how to mount secrets/configmaps [here](https://github.com/jobtome-labs/ci-templates/pull/47)
@@ -800,6 +802,9 @@ variables:
   SECRET_YAML_QUALITY: <some b64 of a secret called myapp-serviceaccounts>
   SECRET_YAML_PRODUCTION: <some b64 of a secret called myapp-serviceaccounts>
   SECRET_MOUNTS: "/secrets=myapp-serviceaccounts"
+  CONFIGMAP_PATH_QUALITY: <a path in this repo containing the definition of a configmap called myapp-configmap>
+  CONFIGMAP_PATH_PRODUCTION: <a path in this repo containing the definition of a configmap called myapp-configmap>
+  CONFIGMAP_MOUNTS: "/configs=myapp-configmap"
 ```
 
 Read more detail about how to mount secrets/configmaps [here](https://github.com/jobtome-labs/ci-templates/pull/47)
