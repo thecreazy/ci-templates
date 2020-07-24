@@ -104,10 +104,17 @@
         echo "${SECRET_YAML}" | base64 -d > /tmp/secret.yaml
         kubectl apply -f /tmp/secret.yaml --namespace=${NAMESPACE}
 
-        COMMAND_TO_RUN+=( --set-secrets=[${SECRET_MOUNTS}] )
+        if [ -n "${SECRET_MOUNTS}" ]; then
+          COMMAND_TO_RUN+=( --set-secrets=[${SECRET_MOUNTS}] )
+        else
+          echo
+          echo "Missing SECRET_MOUNTS even if SECRET_YAML was configured!"
+          echo "You applied a secret without mounting it?"
+          echo
+        fi
       fi
 
-      if [ -f "${CONFIGMAP_PATH}" ]; then
+      if [ -n "${CONFIGMAP_PATH}" ]; then
 
         echo
         echo "-> ... also deploying kubernetes configmaps"
@@ -115,7 +122,14 @@
 
         kubectl apply -f ${CONFIGMAP_PATH} --namespace=${NAMESPACE}
 
-        COMMAND_TO_RUN+=( --set-config-maps=[${CONFIGMAP_MOUNTS}] )
+        if [ -n "${CONFIGMAP_MOUNTS}" ]; then
+          COMMAND_TO_RUN+=( --set-config-maps=[${CONFIGMAP_MOUNTS}] )
+        else
+          echo
+          echo "Missing CONFIGMAP_MOUNTS even if CONFIGMAP_PATH was configured!"
+          echo "You applied a configmap without mounting it?"
+          echo
+        fi
       fi
 
       STATUS=0
