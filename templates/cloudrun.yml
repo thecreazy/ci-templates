@@ -101,19 +101,19 @@
         echo "-> ... also deploying kubernetes secrets"
         echo
 
-        echo "${SECRET_YAML}" > kube/secret.yaml
-        kubectl apply -f kube/secret.yaml --namespace=${NAMESPACE}
+        echo "${SECRET_YAML}" | base64 -d > /tmp/secret.yaml
+        kubectl apply -f /tmp/secret.yaml --namespace=${NAMESPACE}
 
         COMMAND_TO_RUN+=( --set-secrets=[${SECRET_MOUNTS}] )
       fi
 
-      if [ -f "kube/configmap.yaml" ]; then
+      if [ -f "${CONFIGMAP_PATH}" ]; then
 
         echo
         echo "-> ... also deploying kubernetes configmaps"
         echo
 
-        kubectl apply -f kube/configmap.yaml --namespace=${NAMESPACE}
+        kubectl apply -f ${CONFIGMAP_PATH} --namespace=${NAMESPACE}
 
         COMMAND_TO_RUN+=( --set-config-maps=[${CONFIGMAP_MOUNTS}] )
       fi

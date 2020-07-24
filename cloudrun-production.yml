@@ -8,6 +8,7 @@ deploy:production:
     ENVIRONMENT: production
     DOMAIN: "${SERVICE_NAME}.${NAMESPACE}.example.com"
     SECRET_YAML: "${SECRET_YAML_PRODUCTION}"
+    CONFIGMAP_PATH: "kube/production/configmap.yml"
   only:
     - /^v.+$/i
   except:

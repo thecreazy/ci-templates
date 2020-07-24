@@ -10,5 +10,6 @@ deploy:quality:
     ENVIRONMENT: quality
     DOMAIN: "${SERVICE_NAME}.${NAMESPACE}.example.com"
     SECRET_YAML: "${SECRET_YAML_QUALITY}"
+    CONFIGMAP_PATH: "kube/quality/configmap.yml"
   only:
     - master
