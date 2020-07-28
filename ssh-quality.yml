@@ -4,7 +4,7 @@ include:
 ssh:quality:
   extends: .ssh:exec
   variables:
-    SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEYT_QUALITY}
+    SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEY_QUALITY}
     SSH_USER: ${SSH_USER_QUALITY}
     SSH_HOST: ${SSH_HOST_QUALITY}
     SSH_COMMAND: ${SSH_COMMAND_QUALITY}
