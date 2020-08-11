@@ -1,0 +1,27 @@
+lint:python:
+  stage: lint
+  image: linuxbandit/pythonlinter-reviewdog:v1.0.0
+  script:
+    - |
+
+      echo
+      echo "-> Linting code:"
+      echo
+
+      DIRS=( $(ls -F | grep '/' | sed 's|/||') )
+      for dir in "${DIRS[@]}"; do
+        cd "${dir}"
+        FILES=( $(ls *.py) )
+        for file in "${FILES[@]}"; do
+          echo "-> Analysing file ${file}"
+          echo
+          flake8 "${file}"
+          echo
+          echo
+        done
+        cd ..
+      done
+
+      echo
+      echo "-> Code checked!"
+      echo

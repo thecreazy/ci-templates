@@ -199,6 +199,19 @@ variables:
   REVIEWDOG_LEVEL: warning # optional, values: info, warning, error
 ```
 
+### Linting python files
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/lint-python.yml'
+
+stages:
+  - lint
+
+```
+
+The docker image allows use with reviewdog, like above, but the code has not been added yet. Contributions are welcome
+
 # Unit test stage
 
 ```yaml
