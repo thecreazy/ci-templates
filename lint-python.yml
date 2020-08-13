@@ -4,23 +4,19 @@ lint:python:
   script:
     - |
 
+      COMMAND_TO_RUN="flake8"
+
+      if [[ -n "${IGNORE_PYTHON_LINT}" ]]; then
+        COMMAND_TO_RUN+=( --ignore=${IGNORE_PYTHON_LINT} )
+      fi
+
       echo
       echo "-> Linting code:"
       echo
 
-      DIRS=( $(ls -F | grep '/' | sed 's|/||') )
-      for dir in "${DIRS[@]}"; do
-        cd "${dir}"
-        FILES=( $(ls *.py) )
-        for file in "${FILES[@]}"; do
-          echo "-> Analysing file ${file}"
-          echo
-          flake8 "${file}"
-          echo
-          echo
-        done
-        cd ..
-      done
+      COMMAND_TO_RUN+=( . )
+
+      ${COMMAND_TO_RUN[@]}
 
       echo
       echo "-> Code checked!"

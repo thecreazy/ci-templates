@@ -208,6 +208,8 @@ include:
 stages:
   - lint
 
+variables:
+  IGNORE_PYTHON_LINT: "E10,D11,I12" #@see https://flake8.pycqa.org/en/latest/user/violations.html
 ```
 
 The docker image allows use with reviewdog, like above, but the code has not been added yet. Contributions are welcome
