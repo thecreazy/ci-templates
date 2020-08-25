@@ -7,7 +7,10 @@ job:shell:
   script:
     - |
 
+      set -x
+
       if [ -n "${SCRIPT_NAME}" ]; then
+
         echo
         echo "-> Shell file ${SCRIPT_NAME} to be executed!"
         echo
@@ -19,6 +22,7 @@ job:shell:
         echo
         echo "-> Shell file run!"
         echo
+
       else
 
         echo
