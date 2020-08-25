@@ -7,9 +7,9 @@ job:shell:
   script:
     - |
 
-      set -x
-
       if [ -n "${SCRIPT_NAME}" ]; then
+
+        chmod +x ./${SCRIPT_NAME}
 
         echo
         echo "-> Shell file ${SCRIPT_NAME} to be executed!"
