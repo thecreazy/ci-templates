@@ -881,6 +881,24 @@ stages:
   - test
 ```
 
+## Bash script execution
+
+It could be useful to have a script executed through a pipeline. This enables code reviews, programmatic execution (of the script, and of checks beforehands), and avoids 'works on my machine' cases. Our most prominent use-case is when we have to work on the terraform state.
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/shell-job.yml'
+
+stages:
+  - lint
+  - deploy
+```
+
+NOTE:
+- the file does not need to be executable, the pipeline will do `chmod +x`
+- the script name to be launched (e.g. `test-script.sh`) MUST be passed as variable with name `SCRIPT_NAME` in the 'manual' deploy phase (see picture). If the script needs it, a variable `ARGUMENTS` can also be passed. The receiving script must know how to use them!
+
+![Example of gitlab](gitlab-manual.jpg)
+
 ## Notify sentry of release
 
 ```yaml
