@@ -77,6 +77,7 @@ According to the operation / the type of pipeline you have to perform, you can p
 - [Linting](#linting)
 - Tests
   - [Docker-compose tests](#unit-test-stage)
+  - [API tests](#api-test-stage)
 - [Docker pipeline](#docker-pipeline)
   - Build
   - Test for image vulnerabilities
@@ -228,7 +229,24 @@ variables:
   COMPOSER_FILE_NAME: "docker-compose.test.yml" #Default value
 ```
 
+This assumes testing to be done on the containerised application.
 This will spin up a `docker-compose.test.yml` and check the exit code of the container `app`. If the file is not named `docker-compose.test.yml`, or the test container is not named `app`, the variables are there to correct the names.
+
+# API test stage
+
+```yaml
+include:
+  remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/test-api.yml'
+
+stages:
+  - test
+
+variables:
+  TEST_FOLDER: "tests" #Default value
+  THREADS: "3" #Default value
+```
+
+This will run all the test definitions defined with BDD-syntax into [karate](https://github.com/intuit/karate)
 
 ## Docker pipeline
 
