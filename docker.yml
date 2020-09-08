@@ -1,5 +1,5 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.21.0/templates/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.22.0/templates/docker.yml'
 
 build:
   stage: build
@@ -103,6 +103,8 @@ build:cache:
             echo "Missing build target stage '${stage}' in Dockerfile!"
           else
             docker push "${CI_REGISTRY_IMAGE}:latest-${stage}"
+            docker tag "${CI_REGISTRY_IMAGE}:latest-${stage}" "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}-${stage}"
+            docker push "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}-${stage}"
             COMMAND_CACHE_FROM+=( --cache-from "${CI_REGISTRY_IMAGE}:latest-${stage}" )
           fi
         done
@@ -134,6 +136,8 @@ build:cache:
               echo "Missing build target stage '${stage}' in Dockerfile for ${image}!"
             else
               docker push "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}"
+              docker tag "${CI_REGISTRY_IMAGE}:latest-${stage}" "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}-${stage}"
+              docker push "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}-${stage}"
               COMMAND_CACHE_FROM+=( --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" )
             fi
           done
