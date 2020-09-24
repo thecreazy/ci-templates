@@ -35,7 +35,7 @@ plan:
       terraform init
     - |
       terraform plan -out=plan.tfplan | tee operation
-      if ( ! $(grep '0 to destroy' destroy > /dev/null) ); then
+      if ( ! $(grep '0 to destroy' operation > /dev/null) ); then
         echo 
         echo 
         echo "****************************************"
