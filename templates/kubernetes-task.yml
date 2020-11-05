@@ -51,8 +51,6 @@
 
       # EXEC THE SCRIPT TO KUBERNETES
       
-      #FINAL_SCRIPT=( "${KUBERNETES_SCRIPT}" )
-      #echo "${FINAL_SCRIPT}"
-      #"${FINAL_SCRIPT[@]}"
-      echo "New version test 1"
-      "${KUBERNETES_SCRIPT[@]}"
+      FINAL_SCRIPT=( "${KUBERNETES_SCRIPT}" )
+      echo "${FINAL_SCRIPT}"
+      "${FINAL_SCRIPT[@]}"
