@@ -50,5 +50,7 @@
       }
 
       # EXEC THE SCRIPT TO KUBERNETES
-
-      "${KUBERNETES_SCRIPT[@]}"
+      
+      FINAL_SCRIPT=( "${KUBERNETES_SCRIPT}" )
+      
+      "${FINAL_SCRIPT[@]}"
