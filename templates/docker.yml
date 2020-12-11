@@ -1,6 +1,6 @@
 .docker:
   image: gdiener/dind-bash:v1.1.0
-  services: [ "docker:dind" ]
+  services: [ "docker:19-dind" ]
 
 variables:
   DOCKER_BUILDKIT: 1
