@@ -1,6 +1,6 @@
 .terraform:
   image:
-    name: hashicorp/terraform:0.12.24
+    name: hashicorp/terraform:0.12.29
     entrypoint: [""]
 
 cache:
