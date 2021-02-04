@@ -1,5 +1,5 @@
 .sentry:
-  image: getsentry/sentry-cli:1.52.3
+  image: linuxbandit/sentry-cli-bash:v1.0.0
   only:
     - /^v.+$/i
     - master
