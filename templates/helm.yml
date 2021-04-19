@@ -97,6 +97,8 @@
       helm search repo current-repo/"${CHART_NAME}"
       echo
 
+      echo "Chart version - ${CHART_VERSION}"
+
       if [ -z "${CHART_VERSION}" ]; then
         CHART_VERSION=$(helm search repo current-repo/"${CHART_NAME}" | tail -n 1 | awk '{print $2}')
       fi
