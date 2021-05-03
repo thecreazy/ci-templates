@@ -16,7 +16,7 @@ variables:
 #
 # # this step should be run before running any other steps so that it results in a cached image that can be re-used in the next build stage
 # build cache:
-#   extends: .docker-build
+#   extends: .docker:build:multi
 #   stage: build-cache
 #   variables:
 #     # target stage name
@@ -25,7 +25,7 @@ variables:
 #     IMAGE_TAG_SUFFIX: base
 #
 # build prod:
-#   extends: .docker-build
+#   extends: .docker:build:multi
 #   stage: build
 #   variables:
 #     # defines the suffix of the cache image
@@ -34,7 +34,7 @@ variables:
 #     # note, no IMAGE_TAG_SUFFIX defined - this will be the main image in the repo
 #
 # build debug:
-#   extends: .docker-build
+#   extends: .docker:build:multi
 #   stage: build
 #   variables:
 #     CACHE_FROM: base
@@ -42,7 +42,7 @@ variables:
 #     IMAGE_TAG_SUFFIX: debug
 #
 # build nginx:
-#   extends: .docker-build
+#   extends: .docker:build:multi
 #   stage: build
 #   variables:
 #     # note, no CACHE_FROM defined - this will be built without cache
