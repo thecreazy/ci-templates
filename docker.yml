@@ -31,11 +31,17 @@ build:
           done
         fi
 
-        COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}" . )
+        if [[ "${CI_COMMIT_REF_SLUG}" == "master" ]] || [[ -n "${CI_COMMIT_TAG}" ]]; then
+          IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}";
+        else
+          IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}:${CI_COMMIT_SHORT_SHA}";
+        fi
+
+        COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" . )
 
         "${COMMAND_TO_RUN[@]}"
 
-        docker push "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}"
+        docker push "${IMAGE_FULL_NAME}"
       else
         if [ -z "${DOCKERFILES_DIR}" ]; then
           DOCKERFILES_DIR=docker
@@ -61,11 +67,17 @@ build:
             done
           fi
 
-          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile . )
+          if [[ "${CI_COMMIT_REF_SLUG}" == "master" ]] || [[ -n "${CI_COMMIT_TAG}" ]]; then
+            IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}";
+          else
+            IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}/${image}:${CI_COMMIT_SHORT_SHA}";
+          fi
+
+          COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile . )
 
           "${COMMAND_TO_RUN[@]}"
 
-          docker push "${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}"
+          docker push "${IMAGE_FULL_NAME}"
         done
       fi
   only:
