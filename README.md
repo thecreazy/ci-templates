@@ -264,11 +264,90 @@ variables:
   STAGES: "build assets"
   DOCKERFILES_DIR: "docker"
   SKIP_DOCKER_CACHE: "false"
+  DOCKER_NAME_CONTAINS_BRANCH: "true" #optional
 ```
 
 All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). These need to be added to `STAGES` variable. `IMAGES` variable defines the images that will be built, just delete the variable if a single image will be created. In this case the image will be named as `CI_REGISTRY_IMAGE`, othewise `CI_REGISTRY_IMAGE` will be a folder containing `IMAGES`.
 `DOCKERFILES_DIR` is used to specify a different folder containing Dockerfiles instead of the default root directory.
 
+This will spawn a job `build` and a job `build:cache`. NOTE: The cache created at pipeline N is used for the pipeline N+1
+
+By enabling the flag `DOCKER_NAME_CONTAINS_BRANCH`, every branch built (so, by default, a branch which is undergoing MR) will have its own registry image in the following format:
+`registry.example.com/repo-path/repo-name/branch:tag` or `registry.example.com/repo-path/repo-name/branch/image:tag` (master branch is excluded from this).
+This is opposed to the 'usual'
+`registry.example.com/repo-path/repo-name:tag` or
+`registry.example.com/repo-path/repo-name/image:tag` (where classically, image:={app|nginx})
+
+NB: when using this flag, remember that the gitlab's registry cleanup policy happens *per-directory* and not *globally* inside a project's registry.
+
+### Alternative multi-stage build / caching
+
+`.docker:build:multi` template allows building a particular stage of a multi-stage Dockerfile with an optional cache facility. Unlike the other pipeline template, this cache is used within the same pipeline
+
+One can add the following to the .gitlab-ci:
+
+```
+stages:
+  ...
+  - build-cache # new!
+  - build
+  ...
+
+
+# this step should be run before running any other steps so that it results in a cached image that can be re-used in the next build stage
+build-cache:
+  extends: .docker:build:multi
+  stage: build-cache
+  variables:
+    # target stage name
+    BUILD_TARGET: base
+    # tag suffix to produce
+    IMAGE_TAG_SUFFIX: base
+
+build-prod:
+  extends: .docker:build:multi
+  stage: build
+  variables:
+    # defines the suffix of the cache image
+    CACHE_FROM: base
+    BUILD_TARGET: prod
+    # note, no IMAGE_TAG_SUFFIX defined - this will be the main image in the repo
+
+build-debug:
+  extends: .docker:build:multi
+  stage: build
+  variables:
+    CACHE_FROM: base
+    BUILD_TARGET: debug
+    IMAGE_TAG_SUFFIX: debug
+
+build-nginx:
+  extends: .docker:build:multi
+  stage: build
+  variables:
+    # note, no CACHE_FROM defined - this will be built without cache
+    BUILD_TARGET: nginx
+    IMAGE_TAG_SUFFIX: nginx
+```
+
+In natural language: there's a pipeline stage `build-cache` where the docker stage is built, and the following `build` pipeline stage has 3 jobs using the pre-built docker stage.
+
+```
+.docker:build:multi:
+  extends: .docker
+  stage: build
+  #variables:
+    #### Supported vars
+    #CACHE_FROM: base
+    #IMAGE_TAG_SUFFIX: debug
+    #BUILD_TARGET: prod
+```
+
+NOTE: this job assumes that the Dockerfile is ONE, and in the root of the project.
+
+This job does not override the jobs described above: to remove jobs `build` and `build:cache`, add to the .gitlab.ci.yml an override to never run them.
+
+Additionally, this job *by default* creates a docker image for every branch (see end of previous section)
 
 ## Kubernetes quality pipeline
 
