@@ -31,14 +31,11 @@ build:
           done
         fi
 
-        if [[ -n "${DOCKER_NAME_CONTAINS_BRANCH}" ]] && [[ "${DOCKER_NAME_CONTAINS_BRANCH}" == "true" ]]; then
-          if [[ "${CI_COMMIT_REF_SLUG}" == "master" ]] || [[ -n "${CI_COMMIT_TAG}" ]]; then
-            IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}";
-          else
+        IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}";
+        if [[ "${CI_COMMIT_REF_SLUG}" != "master" ]]; then
+          if [[ "${DOCKER_NAME_CONTAINS_BRANCH}" == "true" ]]; then
             IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}:${CI_COMMIT_SHORT_SHA}";
           fi
-        else
-          IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}";
         fi
 
         COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" . )
@@ -71,14 +68,11 @@ build:
             done
           fi
 
-          if [[ -n "${DOCKER_NAME_CONTAINS_BRANCH}" ]] && [[ "${DOCKER_NAME_CONTAINS_BRANCH}" == "true" ]]; then
-            if [[ "${CI_COMMIT_REF_SLUG}" == "master" ]] || [[ -n "${CI_COMMIT_TAG}" ]]; then
-              IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}";
-            else
+          IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}";
+          if [[ "${CI_COMMIT_REF_SLUG}" != "master" ]]; then
+            if [[ "${DOCKER_NAME_CONTAINS_BRANCH}" == "true" ]]; then
               IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}/${image}:${CI_COMMIT_SHORT_SHA}";
             fi
-          else
-            IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${image}:${CI_COMMIT_SHORT_SHA}";
           fi
 
           COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile . )
