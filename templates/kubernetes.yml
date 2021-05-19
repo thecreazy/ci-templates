@@ -1,5 +1,8 @@
-.deploy:image:
+.gcloud-image:
   image: gdiener/ci-image-gcp:v1.0.1
+
+.deploy:image:
+  extends: .gcloud-image
   stage: deploy
   script:
     - &connection |
@@ -219,7 +222,7 @@
     GIT_STRATEGY: none
 
 .deploy:manifest:
-  image: gdiener/ci-image-gcp:v1.0.1
+  extends: .gcloud-image
   stage: manifest
   script:
     - *connection
@@ -316,8 +319,7 @@
   variables:
     GIT_DEPTH: 1
 
-.rollback:
-  image: gdiener/ci-image-gcp:v1.0.1
+  extends: .gcloud-image
   stage: rollback
   script:
     - *connection
