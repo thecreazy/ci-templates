@@ -50,11 +50,16 @@
         HELM_DIR=helm
       fi
 
+      if [ -z "${ENVIRONMENT}" ]; then
+        ENVIRONMENT=production
+      fi
+
       if [ -d "${HELM_DIR}/${ENVIRONMENT}" ]; then
         echo
         echo "-> Getting manifests from directory '${ENVIRONMENT}'"
         echo
         envsubst < "${HELM_DIR}"/"${ENVIRONMENT}"/values.yaml > /tmp/values.yaml
+        HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
       fi
 
       if [ -n "${ENVIRONMENT_PATH}" ] && [ "${ENVIRONMENT_PATH}" != "${ENVIRONMENT}" ]; then
@@ -63,6 +68,7 @@
             echo "-> Getting manifests from directory '${ENVIRONMENT_PATH}'"
             echo
             envsubst < "${HELM_DIR}"/"${ENVIRONMENT_PATH}"/values.yaml > /tmp/values.yaml
+            HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT_PATH}"
           else
             echo
             echo "-> [WARNING] Enviroment directory in '${ENVIRONMENT_PATH}' doesn't exist!"
@@ -71,21 +77,30 @@
       fi
 
       # SECRETS APPLICATION
+      # Priority: file in repo, then SECRET_YAML
 
-      if [ -n "${SECRET_YAML}" ]; then
+      if [ ! -f "${HELM_FILES_PATH}/secrets.yaml" ] && [ -z "${SECRET_YAML}" ]; then
+        echo
+        echo "-> [WARN] No secret to apply!"
+        echo
+      else
         touch /tmp/secrets.yaml
 
-        echo "${SECRET_YAML}" | base64 -d > /tmp/secrets.yaml
+        if [ -f "${HELM_FILES_PATH}/secrets.yaml" ]; then
+          echo "${SOPS_CONF}" > .sops.yaml
+          sops -d "${HELM_FILES_PATH}/secrets.yaml" > /tmp/secrets.yaml
+        fi
+
+        if [ -n "${SECRET_YAML}" ]; then
+          echo "${SECRET_YAML}" | base64 -d >> /tmp/secrets.yaml
+        fi
+
         envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
 
         kubectl apply -f /tmp/secrets.yaml
 
         echo
         echo "-> Secrets deployed!"
-        echo
-      else
-        echo
-        echo "-> Missing 'SECRET_YAML' variable!"
         echo
       fi
 
