@@ -18,7 +18,6 @@
       done
 
       echo "${GOOGLE_KEY}" > /tmp/key.json
-      echo "${SOPS_KEY}" > /tmp/sops.json
 
       gcloud auth activate-service-account --key-file /tmp/key.json
 
@@ -88,8 +87,13 @@
         touch /tmp/secrets.yaml
 
         if [ -f "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" ]; then
-          echo "${SOPS_CONF}" > .sops.yaml
-          GOOGLE_APPLICATION_KEY=/tmp/sops.json sops -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
+          if [ -z "${SOPS_KEY}" ] || [ -z "${SOPS_CONF}" ]; then
+            echo "[WARN] Cannot apply secrets: missing sops key or conf"
+          else
+            echo "${SOPS_CONF}" > /tmp/.sops.yaml
+            echo "${SOPS_KEY}" > /tmp/sops.json
+            GOOGLE_APPLICATION_KEY=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
+          fi
         fi
 
         if [ -n "${SECRET_YAML}" ]; then
@@ -250,8 +254,13 @@
         touch /tmp/secrets.yaml
 
         if [ -f "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" ]; then
-          echo "${SOPS_CONF}" > .sops.yaml
-          GOOGLE_APPLICATION_KEY=/tmp/sops.json sops -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
+          if [ -z "${SOPS_KEY}" ] || [ -z "${SOPS_CONF}" ]; then
+            echo "[WARN] Cannot apply secrets: missing sops key or conf"
+          else
+            echo "${SOPS_CONF}" > /tmp/.sops.yaml
+            echo "${SOPS_KEY}" > /tmp/sops.json
+            GOOGLE_APPLICATION_KEY=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
+          fi
         fi
 
         if [ -n "${SECRET_YAML}" ]; then
