@@ -22,6 +22,7 @@
       # ACTIVATION  PHASE
 
       echo "${GOOGLE_KEY}" > /tmp/key.json
+      echo "${SOPS_KEY}" > /tmp/sops.json
 
       gcloud auth activate-service-account --key-file /tmp/key.json
 
@@ -88,7 +89,7 @@
 
         if [ -f "${HELM_FILES_PATH}/secrets.yaml" ]; then
           echo "${SOPS_CONF}" > .sops.yaml
-          sops -d "${HELM_FILES_PATH}/secrets.yaml" > /tmp/secrets.yaml
+          GOOGLE_APPLICATION_KEY=/tmp/sops.json sops -d "${HELM_FILES_PATH}/secrets.yaml" > /tmp/secrets.yaml
         fi
 
         if [ -n "${SECRET_YAML}" ]; then
