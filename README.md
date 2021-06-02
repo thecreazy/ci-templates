@@ -530,7 +530,7 @@ deploy:production:europe:image:
 ```
 
 ### Note on secrets
-As of version v2.27.0 of the pipelines, Mozilla SOPS has been introduced to take care of secrets *inside of repositories* (encrypted).
+As of version v2.29.0 of the pipelines, Mozilla SOPS has been introduced to take care of secrets *inside of repositories* (encrypted).
 On the human side, don't forget to put git hooks to avoid commit of plaintext secrets.
 On the tech side, in order to use this new feature (which is optional), one needs to add in the gitlab variables a SOPS_KEY (a json of a service account with `Cloud KMS CryptoKey Decrypter` permission on the key), and a SOPS_CONF (containing the `.sops.yaml` configuration).
 
@@ -624,10 +624,13 @@ variables:
   ...
 ```
 
-In addition to these features, you can enable review app on merge requests by adding this remote:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.28.0/helm-branches.yaml'
- 
- Doing so will create a new helm deployment in QA based on the commit slug. Once you're done, you can delete the branch deployment by clicking "stop" in the CI. Please do not forget to add a "stop" stage to the CI as well.
+In addition to these features, starting from `v2.28.0` you can enable review app on merge requests by including in the remotes:
+```
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/helm-branches.yaml'
+```
+and adding as the *last* stage `- stop`.
+
+Doing so will create a new helm deployment in QA based on the commit slug. Once you're done, you can delete the branch deployment by clicking "stop" in the CI.
 
 ### Helm chart publishing
 
