@@ -459,7 +459,7 @@ variables:
   DOMAIN_PRODUCTION_ASIA: as.production.example.com
 ```
 
-## Note on configmaps
+### Note on configmaps
 In order to deploy configmaps at every run (not just after the manual stage of "manifest") one can use this code:
 
 1. Remember to add among the `variables:` the `BEFORE_CUSTOM_APPLY_FILE_PATH: "/tmp/before-manifest.yaml"`
@@ -528,6 +528,12 @@ deploy:production:europe:image:
   before_script:
     - *deployconfig
 ```
+
+### Note on secrets
+As of version v2.27.0 of the pipelines, Mozilla SOPS has been introduced to take care of secrets *inside of repositories* (encrypted).
+On the human side, don't forget to put git hooks to avoid commit of plaintext secrets.
+On the tech side, in order to use this new feature (which is optional), one needs to add in the gitlab variables a SOPS_KEY (a json of a service account with `Cloud KMS CryptoKey Decrypter` permission on the key), and a SOPS_CONF (containing the `.sops.yaml` configuration).
+
 
 ## Kubernetes run script quality
 
