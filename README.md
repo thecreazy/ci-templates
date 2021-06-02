@@ -624,6 +624,11 @@ variables:
   ...
 ```
 
+In addition to these features, you can enable review app on merge requests by adding this remote:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.28.0/helm-branches.yaml'
+ 
+ Doing so will create a new helm deployment in QA based on the commit slug. Once you're done, you can delete the branch deployment by clicking "stop" in the CI. Please do not forget to add a "stop" stage to the CI as well.
+
 ### Helm chart publishing
 
 This is for a repository which holds a Helm chart. It is triggered at every tag.

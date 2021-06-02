@@ -43,7 +43,7 @@
       kubectl cluster-info
       echo
 
-    - |
+    - &environment |
       # CHECK PATHS
 
       if [ -z "${HELM_DIR}" ]; then
@@ -75,7 +75,8 @@
             echo
           fi
       fi
-
+    
+    - |
       # SECRETS APPLICATION
       # Priority: file in repo, then SECRET_YAML
 
@@ -109,6 +110,7 @@
         echo
       fi
 
+    - &helmsetup |
       # HELM APPLICATION
       helm repo add current-repo "${CHARTS_URL}"
       helm repo update
@@ -127,7 +129,24 @@
         TIMEOUT=600s
       fi
 
-      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION}
+    - &helmapply |
+      cat << EOF > /tmp/replacer.sh
+      #!/bin/bash
+      sed 's/name: "${NAMESPACE}"/name: "${APP_NAME}"/g' | sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml/,/---/'
+      EOF
+
+      chmod 755 /tmp/replacer.sh
+
+      cat /tmp/replacer.sh
+      
+      if [ -n "${APP_NAME_BRANCH}" ]; then
+        echo ${APP_NAME}
+        echo ${DOMAIN}
+        helm upgrade --install --atomic "${APP_NAME_BRANCH}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
+      else
+        helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
+      fi
+      
       sleep 5
 
       echo
@@ -142,6 +161,14 @@ deploy:quality:helm:
     name: ${ENVIRONMENT_NAME}
     url: https://${DOMAIN}
 
+deploy:quality:helm:branches:
+  extends: .helm:deploy
+  only:
+    - merge_requests
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+    on_stop: .stop
 
 .deploy:production:helm:
   extends: .helm:deploy
@@ -190,6 +217,48 @@ deploy:quality:helm:
         echo
 
         helm rollback "${APP_NAME}" --wait --timeout "${TIMEOUT}"
+
+        exit 1
+      fi
+
+.stop:
+  extends: .helm
+  variables:
+    GIT_STRATEGY: none
+  environment:
+    name: quality
+    action: stop
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: manual
+  script:
+    - echo "Remove feature branch app"
+    - *checkvars
+    - *activate
+    - *connect
+    - *environment
+    - *helmsetup
+    - |
+      # HELM TEST
+
+      echo
+      echo "-> Removing ${APP_NAME} ! Version of the tests: ${CHART_VERSION}"
+      echo
+
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
+      STATUS=0
+
+      helm delete "${APP_NAME}" --namespace "${NAMESPACE}" \
+        || STATUS=1;
+
+
+      if [ "${STATUS}" = "1" ]; then
+        echo
+        echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"
+        echo
 
         exit 1
       fi
