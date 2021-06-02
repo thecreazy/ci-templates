@@ -92,7 +92,7 @@
           else
             echo "${SOPS_CONF}" > /tmp/.sops.yaml
             echo "${SOPS_KEY}" > /tmp/sops.json
-            GOOGLE_APPLICATION_KEY=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
           fi
         fi
 
@@ -259,7 +259,7 @@
           else
             echo "${SOPS_CONF}" > /tmp/.sops.yaml
             echo "${SOPS_KEY}" > /tmp/sops.json
-            GOOGLE_APPLICATION_KEY=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${KUBERNETES_DIR}/${ENVIRONMENT}/secrets.yaml" > /tmp/secrets.yaml
           fi
         fi
 
