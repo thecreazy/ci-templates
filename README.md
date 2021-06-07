@@ -530,7 +530,7 @@ deploy:production:europe:image:
 ```
 
 ### Note on secrets
-As of version v2.29.0 of the pipelines, Mozilla SOPS has been introduced to take care of secrets *inside of repositories* (encrypted).
+As of version v2.29.1 of the pipelines, Mozilla SOPS has been introduced to take care of secrets *inside of repositories* (encrypted).
 On the human side, don't forget to put git hooks to avoid commit of plaintext secrets.
 On the tech side, in order to use this new feature (which is optional), one needs to add in the gitlab variables a SOPS_KEY (a json of a service account with `Cloud KMS CryptoKey Decrypter` permission on the key), and a SOPS_CONF (containing the `.sops.yaml` configuration).
 
