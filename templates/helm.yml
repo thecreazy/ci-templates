@@ -246,7 +246,7 @@ deploy:quality:helm:
       
       if [ "${STATUS}" = "1" ]; then
         echo
-        echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"        
+        echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"
         echo
         exit 1
       fi
