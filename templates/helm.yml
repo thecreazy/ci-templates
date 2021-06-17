@@ -1,4 +1,3 @@
-
 .helm:
   image: jobtomelabs/helm-sops:v3.1.1
 
@@ -52,6 +51,10 @@
 
       if [ -z "${ENVIRONMENT}" ]; then
         ENVIRONMENT=production
+      fi
+
+      if [ -n "${APP_NAME_BRANCH}" ]; then
+        ENVIRONMENT=quality
       fi
 
       if [ -d "${HELM_DIR}/${ENVIRONMENT}" ]; then
@@ -161,14 +164,6 @@ deploy:quality:helm:
     name: ${ENVIRONMENT_NAME}
     url: https://${DOMAIN}
 
-deploy:quality:helm:branches:
-  extends: .helm:deploy
-  only:
-    - merge_requests
-  environment:
-    name: ${ENVIRONMENT_NAME}
-    url: https://${DOMAIN}
-
 .deploy:production:helm:
   extends: .helm:deploy
   only:
@@ -219,14 +214,11 @@ deploy:quality:helm:branches:
 
         exit 1
       fi
-
+ 
 .stop:
   extends: .helm
   variables:
     GIT_STRATEGY: none
-  environment:
-    name: quality
-    action: stop
   rules:
     - if: $CI_MERGE_REQUEST_ID
       when: manual
@@ -239,25 +231,22 @@ deploy:quality:helm:branches:
     - *helmsetup
     - |
       # HELM TEST
-
+      
       echo
       echo "-> Removing ${APP_NAME} ! Version of the tests: ${CHART_VERSION}"
       echo
-
+      
       if [ -z "${TIMEOUT}" ]; then
         TIMEOUT=600s
       fi
-
+      
       STATUS=0
-
-      helm delete "${APP_NAME}" --namespace "${NAMESPACE}" \
-        || STATUS=1;
-
-
+      
+      helm delete "${APP_NAME}" --namespace "${NAMESPACE}" || STATUS=1;
+      
       if [ "${STATUS}" = "1" ]; then
         echo
         echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"
         echo
-
         exit 1
       fi

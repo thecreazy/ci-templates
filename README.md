@@ -624,13 +624,19 @@ variables:
   ...
 ```
 
-In addition to these features, starting from `v2.28.0` you can enable review app on merge requests by including in the remotes:
+In addition to these features, starting from `v2.29.2` you can enable review app on merge requests by including in the remotes:
 ```
   - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/helm-branches.yaml'
 ```
 and adding as the *last* stage `- stop`.
 
-Doing so will create a new helm deployment in QA based on the commit slug. Once you're done, you can delete the branch deployment by clicking "stop" in the CI.
+Doing so will create a new helm deployment in QA based on the commit slug when the branch name starts with "feat". Once you're done, the branch deployment will be automatically deleted. This requires also to set up a values.yaml in the helm/feature/ folder (you may juspy quality one as a starting point).
+
+Branch domain and app name can be overriden in gitlab-ci.yml using these variables:
+
+DOMAIN_BRANCH: "mydomain.tld"
+APP_NAME_BRANCH: "myapp"
+
 
 ### Helm chart publishing
 
