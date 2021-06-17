@@ -231,18 +231,22 @@ deploy:quality:helm:
     - *helmsetup
     - |
       # HELM TEST
+      
       echo
       echo "-> Removing ${APP_NAME} ! Version of the tests: ${CHART_VERSION}"
       echo
+      
       if [ -z "${TIMEOUT}" ]; then
         TIMEOUT=600s
       fi
+      
       STATUS=0
-      helm delete "${APP_NAME}" --namespace "${NAMESPACE}" \
-        || STATUS=1;
+      
+      helm delete "${APP_NAME}" --namespace "${NAMESPACE}" || STATUS=1;
+      
       if [ "${STATUS}" = "1" ]; then
         echo
-        echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"
+        echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"        
         echo
         exit 1
       fi
