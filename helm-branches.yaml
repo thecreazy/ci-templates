@@ -41,7 +41,8 @@ deploy:quality:helm:branches:
   only:
     - merge_requests
   except:
-    - /^(?!feat).+@
+    variables:
+      - $CI_COMMIT_REF_NAME !~ /^feat/
   
 stop:quality:
   extends: .stop

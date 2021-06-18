@@ -624,7 +624,7 @@ variables:
   ...
 ```
 
-In addition to these features, starting from `v2.29.2` you can enable review app on merge requests by including in the remotes:
+In addition to these features, starting from `v2.29.3` you can enable review app on merge requests by including in the remotes:
 ```
   - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/helm-branches.yaml'
 ```
