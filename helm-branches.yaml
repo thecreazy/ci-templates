@@ -32,7 +32,7 @@ deploy:quality:helm:branches:
     - echo ${APP_NAME_BRANCH}
     - |
       # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
+      for var in "GOOGLE_KEY_FEATURE" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
           if [ -z "${!var}" ]; then
             echo "Missing '${var}' variable!"
             exit 1
