@@ -54,7 +54,7 @@
       fi
 
       if [ -n "${APP_NAME_BRANCH}" ]; then
-        ENVIRONMENT=quality
+        ENVIRONMENT=feature
       fi
 
       if [ -d "${HELM_DIR}/${ENVIRONMENT}" ]; then
@@ -135,16 +135,15 @@
     - &helmapply |
       cat << EOF > /tmp/replacer.sh
       #!/bin/bash
-      sed 's/name: "${NAMESPACE}"/name: "${APP_NAME}"/g' | sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml/,/---/'
+      sed 's/name: "${NAMESPACE}"/name: "${APP_NAME}"/g' | sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml|configmap.yaml/,/---/'
       EOF
 
       chmod 755 /tmp/replacer.sh
 
-      cat /tmp/replacer.sh
-      
       if [ -n "${APP_NAME_BRANCH}" ]; then
         echo ${APP_NAME}
         echo ${DOMAIN}
+        #helm template "current-repo/${CHART_NAME}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
         helm upgrade --install --atomic "${APP_NAME_BRANCH}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
       else
         helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true

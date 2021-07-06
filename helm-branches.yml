@@ -1,35 +1,51 @@
 deploy:quality:helm:branches:
   extends: .helm:deploy
   environment:
-    name: ${CI_COMMIT_REF_SLUG}
-    url: https://${DOMAIN}
+    name: review/$CI_BUILD_REF_NAME
+    url: https://${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
     on_stop: stop:quality
   variables:
     CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
-    SECRET_YAML: ${SECRET_YAML_QUALITY}
+    #SECRET_YAML: ${SECRET_YAML_FEATURE}
     NAMESPACE: ${NAMESPACE_QUALITY}
     ENVIRONMENT: feature
     APP_NAME: ${CI_COMMIT_REF_SLUG}
   before_script:
     - |
+      # use a specific CI/CD variable if SECRET_BRANCH is specified in gitlab-ci
+      if [ -n "${SECRET_BRANCH}" ]; then
+        export SECRET_YAML=${!SECRET_BRANCH}
+      # otherwise, use default SECRET_YAML_FEATURE CI/CD variable
+      else
+        export SECRET_YAML=${SECRET_YAML_FEATURE}
+      fi
+    - echo ${SECRET_YAML}
+
+    - |
+      # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
       if [ -n "${DOMAIN_BRANCH}" ]; then
         db=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
+      # otherwise, use default DOMAIN_QUALITY
       else
         db=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
       fi
       export DOMAIN=$( eval echo \$db )
-    - echo ${DOMAIN}
+    - echo https://${DOMAIN}
+
     - |
+      # use a specific host if APP_NAME_BRANCH is specified in gitlab-ci
       if [ -n "${APP_NAME_BRANCH}" ]; then
         app=${APP_NAME_BRANCH}
+      # otherwise, use default CI_COMMIT_REF_SLUG
       else
         app=${CI_COMMIT_REF_SLUG}
       fi
       export APP_NAME_BRANCH=$( eval echo \$app )
     - echo ${APP_NAME_BRANCH}
+    
     - |
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
@@ -46,9 +62,9 @@ deploy:quality:helm:branches:
   
 stop:quality:
   extends: .stop
+  allow_failure: true
   environment:
-    name: ${CI_COMMIT_REF_SLUG}
-    url: https://${DOMAIN}
+    name: review/$CI_BUILD_REF_NAME
     action: stop
   stage: stop
   variables:
