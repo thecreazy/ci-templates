@@ -1,7 +1,5 @@
-.terraform:
-  image:
-    name: hashicorp/terraform:0.12.29
-    entrypoint: [""]
+include:
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.30.2/templates/terraform.yml'
 
 cache:
   key: ${CI_PIPELINE_ID}
@@ -23,8 +21,6 @@ validate:
     - /^v.+$/i
     - master
     - merge_requests
-  variables:
-    GIT_DEPTH: 1
 
 plan:
   extends: .terraform
@@ -36,8 +32,8 @@ plan:
     - |
       terraform plan -out=plan.tfplan | tee operation
       if ( ! $(grep '0 to destroy' operation > /dev/null) ); then
-        echo 
-        echo 
+        echo
+        echo
         echo "****************************************"
         echo "****************************************"
         echo "****    !!!!    WARNING     !!!!    ****"
@@ -54,8 +50,6 @@ plan:
     - /^v.+$/i
   except:
     - branches
-  variables:
-    GIT_DEPTH: 1
 
 apply:
   extends: .terraform
@@ -73,5 +67,3 @@ apply:
     - branches
   environment:
     name: production
-  variables:
-    GIT_DEPTH: 1
