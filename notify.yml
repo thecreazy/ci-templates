@@ -70,8 +70,8 @@ publish:slack:
             "short": "false"
           }
         ],
-        "footer": "My-company pipeline",
-        "footer_icon": "https://example.com/images/favicon.png",
+        "footer": "${SLACK_NOTIFICATION_FOOTER:My-company pipeline}",
+        "footer_icon": "${SLACK_NOTIFICATION_ICON:https://example.com/images/favicon.png}",
         "fallback": "Deployment of ${CI_PROJECT_NAME} ${CI_COMMIT_TAG} completed\n \nMore info: <${CI_PIPELINE_URL}|${CI_PIPELINE_URL}>"
       }
       EOF
