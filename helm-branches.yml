@@ -61,13 +61,21 @@ deploy:quality:helm:branches:
       done
     - |
       # CLONE DB
+      echo "Cloning db"
+      set +e
       URL=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
+      echo "URL=${URL}"
       URL_BRANCH=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
+      set -e
+      echo "URL_BRANCH=${URL_BRANCH}"
       if [ -z "${URL}" ]; then
+        echo "empty \$URL"
+        set +e
         DB_USERNAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_USERNAME | awk '{ print $2}' | base64 -d )
         DB_PASSWORD=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_PASSWORD | awk '{ print $2}' | base64 -d )
         DB_HOST=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
         DB_NAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
+        set -e
         for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
           if [ -z "${!var}" ]; then
             echo "Warning: Missing '${var}' variable or DATABASE_URL! Not proceeding with DB cloning"
@@ -80,8 +88,11 @@ deploy:quality:helm:branches:
           mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
           mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
           mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
+        else
+          echo "no_db option was set"
         fi
       else
+        echo "URL=${URL}"
         DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
         eval $( echo $URL | awk -v db_name_feat="$DB_NAME_FEAT" -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "CREATE DATABASE " "\x60" db_name_feat "\x60" "\x27" " ; mysqldump -u" $4 " -p" $5 " -h" $6 " " $8 " --opt --single-transaction --skip-add-locks | mysql -u" $4 " -p" $5 " -h" $6 " --max_allowed_packet=32M " db_name_feat}' ) || { echo 'DB cloning failed with URL! Please check credentials' ; exit 1; }
       fi
@@ -126,13 +137,17 @@ stop:quality:
       done
     - |
       # REMOVE DB
+      set +e
       URL=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
-      echo $URL
+      set -e
+      echo "URL=${URL}"
       if [ -z "${URL}" ]; then
+        set +e
         DB_USERNAME=$( echo $SECRET_YAML | base64 -d | grep DB_USERNAME | awk '{ print $2}' | base64 -d )
         DB_PASSWORD=$( echo $SECRET_YAML | base64 -d | grep DB_PASSWORD | awk '{ print $2}' | base64 -d )
         DB_HOST=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
         DB_NAME=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
+        set -e
         for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
           if [ -z "${!var}" ]; then
             echo "Warning: Missing '${var}' variable or DATABASE_URL! Not proceeding with DB deletion"
@@ -140,11 +155,13 @@ stop:quality:
             break
           fi
         done
-        if [ -z "$(no_db)" ]; then
+        if [ -z "${no_db}" ]; then
           mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
           mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "DROP DATABASE $DB_NAME;" || { echo 'DB deletion failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
+        else
+          echo "no_db option was set"
         fi
       else
         echo $URL | awk -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "DROP DATABASE " "\x60" $8 "\x60"";" "\x27" }'
-         eval $( echo $URL | awk -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "DROP DATABASE " "\x60" $8 "\x60"";" "\x27" }' ) || { echo 'DB deletion failed with URL! Please check credentials' ; exit 1; }
+        eval $( echo $URL | awk -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "DROP DATABASE " "\x60" $8 "\x60"";" "\x27" }' ) || { echo 'DB deletion failed with URL! Please check credentials' ; exit 1; }
       fi
