@@ -708,6 +708,14 @@ variables:
   SLACK_WEBHOOK_URL: <url>
 ```
 
+Optional customisations:
+```
+SLACK_USERNAME
+SLACK_NOTIFICATION_FOOTER
+SLACK_NOTIFICATION_ICON
+SLACK_ICON
+```
+
 ## Deploy to Google Storage
 
 ```yaml
