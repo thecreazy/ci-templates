@@ -74,7 +74,11 @@ deploy:quality:helm:branches:
         DB_USERNAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_USERNAME | awk '{ print $2}' | base64 -d )
         DB_PASSWORD=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_PASSWORD | awk '{ print $2}' | base64 -d )
         DB_HOST=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-        DB_NAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
+        if [ -n "${DATABASE_NAME_BRANCH}" ]; then
+          DB_NAME=$DATABASE_NAME_BRANCH
+        else
+          DB_NAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
+        fi
         set -e
         for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
           if [ -z "${!var}" ]; then
@@ -84,7 +88,11 @@ deploy:quality:helm:branches:
           fi
         done
         if [ -z "${no_db}" ]; then
-          DB_NAME_FEAT=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
+          if [ -n "${DATABASE_NAME_BRANCH}" ]; then
+            DB_NAME=$DATABASE_NAME_BRANCH
+          else
+            DB_NAME_FEAT=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
+          fi
           mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
           mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
           mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
