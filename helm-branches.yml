@@ -22,6 +22,12 @@ deploy:quality:helm:branches:
       done
 
     - |
+      # CHECK DIRS
+      if [ -z "${HELM_DIR}" ]; then
+        HELM_DIR=helm
+      fi
+
+    - |
       # we need SECRET_YAML_QUALITY to perform DB cloning (it contains quality DB name, SECRET_YAML should contain the new name)
       if [ -n "${SECRET_YAML_QUALITY}" ]; then
         export SECRET_YAML_QUALITY=${SECRET_YAML_QUALITY}
@@ -104,6 +110,43 @@ deploy:quality:helm:branches:
         DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
         eval $( echo $URL | awk -v db_name_feat="$DB_NAME_FEAT" -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "CREATE DATABASE " "\x60" db_name_feat "\x60" "\x27" " ; mysqldump -u" $4 " -p" $5 " -h" $6 " " $8 " --opt --single-transaction --skip-add-locks | mysql -u" $4 " -p" $5 " -h" $6 " --max_allowed_packet=32M " db_name_feat}' ) || { echo 'DB cloning failed with URL! Please check credentials' ; exit 1; }
       fi
+
+    - |
+      # HELM APPLICATION
+      helm repo add current-repo "${CHARTS_URL}"
+      helm repo update
+
+      echo
+      helm search repo current-repo/"${CHART_NAME}"
+      echo
+
+      echo "Chart version - ${CHART_VERSION}"
+
+      if [ -z "${CHART_VERSION}" ]; then
+        CHART_VERSION=$(helm search repo current-repo/"${CHART_NAME}" | tail -n 1 | awk '{print $2}')
+      fi
+
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
+    - |
+      cat << EOF > /tmp/replacer.sh
+      #!/bin/bash
+      sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml|configmap.yaml/,/---/'
+      EOF
+
+      chmod 755 /tmp/replacer.sh
+
+      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
+
+      sleep 5
+
+      echo
+      echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
+      echo "--> This is a feature branch! You can check it at ${DOMAIN}"
+      echo
+
   only:
     - merge_requests
   except:
