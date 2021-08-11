@@ -12,6 +12,14 @@ deploy:quality:helm:branches:
     ENVIRONMENT: feature
     CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
   before_script:
+    ###
+    # customisable params:
+    # APP_NAME_BRANCH      (pilots APP_NAME; default CI_COMMIT_SHORT_SHA)
+    # DOMAIN_BRANCH        (pilots DOMAIN; default ${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+    # SECRET_BRANCH        (pilots SECRET_YAML; default SECRET_YAML_FEATURE)
+    # DB_URL_BRANCH        (pilots; default)
+    # DATABASE_NAME_BRANCH (pilots DB_NAME; default DB_HOST which comes from SECRET_YAML)
+    ###
     - |
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
@@ -28,52 +36,49 @@ deploy:quality:helm:branches:
       fi
 
     - |
-      # we need SECRET_YAML_QUALITY to perform DB cloning (it contains quality DB name, SECRET_YAML should contain the new name)
+      # SECRETS OPERATIONS: Identification
+      # we need SECRET_YAML_QUALITY to perform DB cloning
+      # (it contains quality DB name, whereas SECRET_YAML should
+      # contain the new name i.e. the name of the feature branch)
       if [ -n "${SECRET_YAML_QUALITY}" ]; then
-        export SECRET_YAML_QUALITY=${SECRET_YAML_QUALITY}
-      fi
+        SECRET_YAML_QUALITY=${SECRET_YAML_QUALITY}
+      fi #FIXME remove and/or replace with SOPS
 
-    - |
       # use a specific CI/CD variable if SECRET_BRANCH is specified in gitlab-ci
       if [ -n "${SECRET_BRANCH}" ]; then
-        export SECRET_YAML=${!SECRET_BRANCH}
+        SECRET_YAML=${!SECRET_BRANCH}
       # otherwise, use default SECRET_YAML_FEATURE CI/CD variable
       else
-        export SECRET_YAML=${SECRET_YAML_FEATURE}
+        SECRET_YAML=${SECRET_YAML_FEATURE}
       fi
-    - echo ${SECRET_YAML}
 
     - |
+      # DOMAIN OPERATIONS
       # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
       if [ -n "${DOMAIN_BRANCH}" ]; then
-        db=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
+        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
       # otherwise, use default DOMAIN_QUALITY
       else
-        db=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
       fi
-      export DOMAIN=$( eval echo \$db )
-    - echo https://${DOMAIN}
 
-    - |
       # use a specific host if APP_NAME_BRANCH is specified in gitlab-ci
       if [ -n "${APP_NAME_BRANCH}" ]; then
-        app=${APP_NAME_BRANCH}
-      # otherwise, use default CI_COMMIT_REF_SLUG
+        APP_NAME=${APP_NAME_BRANCH}
+      # otherwise, use default APP_NAME (i.e. COMMIT_REF_SLUG)
       else
-        app=${CI_COMMIT_REF_SLUG}
+        APP_NAME=${CI_COMMIT_REF_SLUG}
       fi
-      export APP_NAME_BRANCH=$( eval echo \$app )
-    - echo ${APP_NAME_BRANCH}
 
     - |
-      # CLONE DB
+      # CLONE DB phase
       echo "Cloning db"
       set +e
       URL=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
       echo "URL=${URL}"
       URL_BRANCH=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
-      set -e
       echo "URL_BRANCH=${URL_BRANCH}"
+      set -e
       if [ -z "${URL}" ]; then
         echo "empty \$URL"
         set +e
