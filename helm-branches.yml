@@ -77,6 +77,40 @@ deploy:quality:helm:branches:
       fi
 
     - |
+      # SECRETS OPERATIONS: application
+      # Priority: file in repo, then SECRET_YAML
+
+      if [ ! -f "${HELM_DIR}/secrets.yaml" ] && [ -z "${SECRET_YAML}" ]; then
+        echo
+        echo "-> [WARN] No secret to apply!"
+        echo
+      else
+        touch /tmp/secrets.yaml
+
+        if [ -f "${HELM_DIR}/secrets.yaml" ]; then
+          if [ -z "${SOPS_KEY}" ] || [ -z "${SOPS_CONF}" ]; then
+            echo "[WARN] Cannot apply secrets: missing sops key or conf"
+          else
+            echo "${SOPS_CONF}" > /tmp/.sops.yaml
+            echo "${SOPS_KEY}" > /tmp/sops.json
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${HELM_DIR}/secrets.yaml" > /tmp/secrets.yaml
+          fi
+        fi
+
+        if [ -n "${SECRET_YAML}" ]; then
+          echo "${SECRET_YAML}" | base64 -d >> /tmp/secrets.yaml
+        fi
+
+        envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
+
+        kubectl apply -f /tmp/secrets.yaml
+
+        echo
+        echo "-> Secrets deployed!"
+        echo
+      fi
+
+    - |
       # DOMAIN OPERATIONS
       # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
       if [ -n "${DOMAIN_BRANCH}" ]; then
