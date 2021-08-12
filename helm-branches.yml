@@ -17,8 +17,8 @@ deploy:quality:helm:branches:
     # APP_NAME_BRANCH      (pilots APP_NAME; default CI_COMMIT_SHORT_SHA)
     # DOMAIN_BRANCH        (pilots DOMAIN; default ${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
     # SECRET_BRANCH        (pilots SECRET_YAML; default SECRET_YAML_FEATURE)
-    # DB_URL_BRANCH        (pilots; default)
-    # DATABASE_NAME_BRANCH (pilots DB_NAME; default DB_HOST which comes from SECRET_YAML)
+    # DATABASE_NAME_BRANCH (pilots DB_NAME_FEAT; default DB_HOST which comes from SECRET_YAML_QUALITY
+    #  \_____________ OR in case of no DB_HOST,  default *comes from* URL_BRANCH 'disassembled', which comes from SECRET_YAML)
     ###
     - |
       # CHECK VARIABLES PHASE
@@ -62,7 +62,7 @@ deploy:quality:helm:branches:
         DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
       fi
 
-      # use a specific host if APP_NAME_BRANCH is specified in gitlab-ci
+      # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
       if [ -n "${APP_NAME_BRANCH}" ]; then
         APP_NAME=${APP_NAME_BRANCH}
       # otherwise, use default APP_NAME (i.e. COMMIT_REF_SLUG)
@@ -72,48 +72,66 @@ deploy:quality:helm:branches:
 
     - |
       # CLONE DB phase
-      echo "Cloning db"
+      # the db parameters could be in two formats:
+      # - all parameters stored in different variables (DB_USER, DB_PASS, DB_HOST...)
+      # - url schema: everything is into a string, stored in a variable DATABASE_URL
+      # if it's the second case, we turn everything into 'single variables' extracting from the url schema
+      # url schema MUST be complete: `protocol://user:pass@host:port/name`
+
+      echo "-> Finding parameters "
       set +e
-      URL=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
-      echo "URL=${URL}"
-      URL_BRANCH=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
-      echo "URL_BRANCH=${URL_BRANCH}"
+      URL_QA=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
+      echo "URL_QA=${URL_QA}"
       set -e
-      if [ -z "${URL}" ]; then
-        echo "empty \$URL"
+      if [ -z "${URL_QA}" ]; then
+        echo "-> empty \$URL_QA, proceeding to get all parameters singularly"
         set +e
+        # Take user, pass, and host from the secret
         DB_USERNAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_USERNAME | awk '{ print $2}' | base64 -d )
         DB_PASSWORD=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_PASSWORD | awk '{ print $2}' | base64 -d )
         DB_HOST=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-        if [ -n "${DATABASE_NAME_BRANCH}" ]; then
-          DB_NAME=$DATABASE_NAME_BRANCH
-        else
-          DB_NAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-        fi
+        DB_NAME_ORIGIN=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_NAME | awk '{ print $2}' | base64 -d )
         set -e
-        for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
-          if [ -z "${!var}" ]; then
-            echo "Warning: Missing '${var}' variable or DATABASE_URL! Not proceeding with DB cloning"
-            no_db=1
-            break
-          fi
-        done
-        if [ -z "${no_db}" ]; then
-          if [ -n "${DATABASE_NAME_BRANCH}" ]; then
-            DB_NAME=$DATABASE_NAME_BRANCH
-          else
-            DB_NAME_FEAT=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-          fi
-          mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
-          mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
-          mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
-        else
-          echo "no_db option was set"
-        fi
       else
-        echo "URL=${URL}"
-        DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
-        eval $( echo $URL | awk -v db_name_feat="$DB_NAME_FEAT" -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "CREATE DATABASE " "\x60" db_name_feat "\x60" "\x27" " ; mysqldump -u" $4 " -p" $5 " -h" $6 " " $8 " --opt --single-transaction --skip-add-locks | mysql -u" $4 " -p" $5 " -h" $6 " --max_allowed_packet=32M " db_name_feat}' ) || { echo 'DB cloning failed with URL! Please check credentials' ; exit 1; }
+        echo "-> Extracting params from \$URL_QA"
+        DB_USERNAME=$( echo $URL_QA | awk -F [\/:@?] '{print $4}')
+        DB_PASSWORD=$( echo $URL_QA | awk -F [\/:@?] '{print $5}')
+        DB_HOST=$( echo $URL_QA | awk -F [\/:@?] '{print $6}')
+        DB_NAME_ORIGIN=$( echo $URL_QA | awk -F [\/:@?] '{print $8}')
+      fi
+
+      echo "checking if needed params are there!"
+      for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
+        if [ -z "${!var}" ]; then
+          echo "-> Missing both '${var}' variable or/and DATABASE_URL! Not proceeding with DB cloning"
+          no_db=1
+          break
+        fi
+      done
+
+      if [ -z "${no_db}" ]; then
+        if [ -n "${DATABASE_NAME_BRANCH}" ]; then
+          DB_NAME_FEAT=$DATABASE_NAME_BRANCH
+        else
+          DB_NAME_FEAT=$( echo $SECRET_YAML | base64 -d | grep DB_NAME | awk '{ print $2}' | base64 -d )
+          if [ -z "${DB_NAME_FEAT}" ]; then
+            # if the secret does not have DB_NAME, it means we only have the url schema way
+            URL_BRANCH=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
+            DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
+          fi
+        fi
+
+        echo
+        echo "-> Cloning db "
+        echo
+
+        mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
+        mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
+        mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
+      else
+        echo
+        echo "-> [ERROR] Some variables are missing. Cannot proceed to import db"
+        echo
       fi
 
     - |
