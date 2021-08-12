@@ -17,6 +17,7 @@ deploy:quality:helm:branches:
     # APP_NAME_BRANCH      (pilots APP_NAME; default CI_COMMIT_SHORT_SHA)
     # DOMAIN_BRANCH        (pilots DOMAIN; default ${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
     # SECRET_BRANCH        (pilots SECRET_YAML; default SECRET_YAML_FEATURE)
+    # SECRET_BRANCH_SOPS   (pilots SECRET_FILE; default ${HELM_DIR}/${ENVIRONMENT}/secrets.yaml)
     # DATABASE_NAME_BRANCH (pilots DB_NAME_FEAT; default DB_HOST which comes from SECRET_YAML_QUALITY
     #  \_____________ OR in case of no DB_HOST,  default *comes from* URL_BRANCH 'disassembled', which comes from SECRET_YAML)
     ###
@@ -66,9 +67,6 @@ deploy:quality:helm:branches:
       # we need SECRET_YAML_QUALITY to perform DB cloning
       # (it contains quality DB name, whereas SECRET_YAML should
       # contain the new name i.e. the name of the feature branch)
-      if [ -n "${SECRET_YAML_QUALITY}" ]; then
-        SECRET_YAML_QUALITY=${SECRET_YAML_QUALITY}
-      fi #FIXME remove and/or replace with SOPS
 
       # use a specific CI/CD variable if SECRET_BRANCH is specified in gitlab-ci
       if [ -n "${SECRET_BRANCH}" ]; then
@@ -82,20 +80,27 @@ deploy:quality:helm:branches:
       # SECRETS OPERATIONS: application
       # Priority: file in repo, then SECRET_YAML
 
-      if [ ! -f "${HELM_FILES_PATH}/secrets.yaml" ] && [ -z "${SECRET_YAML}" ]; then
+      if [ -n "${SECRET_BRANCH_SOPS}" ]; then
+        SECRET_FILE=${!SECRET_BRANCH_SOPS}
+      # otherwise, use default SECRET_YAML_FEATURE CI/CD variable
+      else
+        SECRET_FILE=${HELM_FILES_PATH}/secrets.yaml
+      fi
+
+      if [ ! -f "${SECRET_FILE}" ] && [ -z "${SECRET_YAML}" ]; then
         echo
         echo "-> [WARN] No secret to apply!"
         echo
       else
         touch /tmp/secrets.yaml
 
-        if [ -f "${HELM_FILES_PATH}/secrets.yaml" ]; then
+        if [ -f "${SECRET_FILE}" ]; then
           if [ -z "${SOPS_KEY}" ] || [ -z "${SOPS_CONF}" ]; then
             echo "[WARN] Cannot apply secrets: missing sops key or conf"
           else
             echo "${SOPS_CONF}" > /tmp/.sops.yaml
             echo "${SOPS_KEY}" > /tmp/sops.json
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${HELM_FILES_PATH}/secrets.yaml" > /tmp/secrets.yaml
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${SECRET_FILE}" > /tmp/secrets.yaml
           fi
         fi
 
