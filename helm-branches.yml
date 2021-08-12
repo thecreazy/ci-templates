@@ -59,6 +59,8 @@ deploy:quality:helm:branches:
         HELM_DIR=helm
       fi
 
+      HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
+
     - |
       # SECRETS OPERATIONS: Identification
       # we need SECRET_YAML_QUALITY to perform DB cloning
@@ -80,20 +82,20 @@ deploy:quality:helm:branches:
       # SECRETS OPERATIONS: application
       # Priority: file in repo, then SECRET_YAML
 
-      if [ ! -f "${HELM_DIR}/secrets.yaml" ] && [ -z "${SECRET_YAML}" ]; then
+      if [ ! -f "${HELM_FILES_PATH}/secrets.yaml" ] && [ -z "${SECRET_YAML}" ]; then
         echo
         echo "-> [WARN] No secret to apply!"
         echo
       else
         touch /tmp/secrets.yaml
 
-        if [ -f "${HELM_DIR}/secrets.yaml" ]; then
+        if [ -f "${HELM_FILES_PATH}/secrets.yaml" ]; then
           if [ -z "${SOPS_KEY}" ] || [ -z "${SOPS_CONF}" ]; then
             echo "[WARN] Cannot apply secrets: missing sops key or conf"
           else
             echo "${SOPS_CONF}" > /tmp/.sops.yaml
             echo "${SOPS_KEY}" > /tmp/sops.json
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${HELM_DIR}/secrets.yaml" > /tmp/secrets.yaml
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${HELM_FILES_PATH}/secrets.yaml" > /tmp/secrets.yaml
           fi
         fi
 
