@@ -28,6 +28,30 @@ deploy:quality:helm:branches:
             exit 1
           fi
       done
+    - |
+      # ACTIVATION PHASE
+
+      echo "${GOOGLE_KEY}" > /tmp/key.json
+
+      gcloud auth activate-service-account --key-file /tmp/key.json
+
+      gcloud config set project "${GOOGLE_PROJECT}"
+
+      echo
+      echo "-> Google project '${GOOGLE_PROJECT}' configured!"
+      echo
+    - |
+      # CLUSTER CONNECTION PHASE
+
+      gcloud container clusters get-credentials --zone "${CLUSTER_ZONE}" "${CLUSTER_NAME}"
+
+      kubectl config set-context $(kubectl config current-context) --namespace="${NAMESPACE}"
+
+      echo
+      echo "-> Namespace '$(kubectl config view --minify --output jsonpath={..namespace})' configured!"
+      echo
+      kubectl cluster-info
+      echo
 
     - |
       # CHECK DIRS
