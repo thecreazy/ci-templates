@@ -118,6 +118,33 @@ deploy:quality:helm:branches:
       fi
 
     - |
+      # SECRETS OPERATIONS: unmangling
+
+      # We have this from above
+      BRANCH_VARS=$( tac /tmp/secrets.yaml | base64 -d | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
+
+      # It is assumed that the quality secret cannot be missing in a feature branch
+      touch /tmp/secrets-qa.yaml
+
+      if [ -f "${HELM_DIR}/quality/secrets.yaml" ]; then
+        if [ -z "${SOPS_KEY}" ] || [ -z "${SOPS_CONF}" ]; then
+          echo "[WARN] Cannot apply secrets: missing sops key or conf"
+        else
+          echo "${SOPS_CONF}" > /tmp/.sops.yaml
+          echo "${SOPS_KEY}" > /tmp/sops.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sops.json sops --config /tmp/.sops.yaml -d "${HELM_DIR}/quality/secrets.yaml" > /tmp/secrets-qa.yaml
+        fi
+      fi
+
+      if [ -n "${SECRET_YAML_QUALITY}" ]; then
+        echo "${SECRET_YAML_QUALITY}" | base64 -d >> /tmp/secrets-qa.yaml
+      fi
+
+      envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
+
+      QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | base64 -d | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
+
+    - |
       # DOMAIN OPERATIONS
       # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
       if [ -n "${DOMAIN_BRANCH}" ]; then
@@ -145,17 +172,17 @@ deploy:quality:helm:branches:
 
       echo "-> Finding parameters "
       set +e
-      URL_QA=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
+      URL_QA=$( echo $QUALITY_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
       echo "URL_QA=${URL_QA}"
       set -e
       if [ -z "${URL_QA}" ]; then
         echo "-> empty \$URL_QA, proceeding to get all parameters singularly"
         set +e
         # Take user, pass, and host from the secret
-        DB_USERNAME=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_USERNAME | awk '{ print $2}' | base64 -d )
-        DB_PASSWORD=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_PASSWORD | awk '{ print $2}' | base64 -d )
-        DB_HOST=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-        DB_NAME_ORIGIN=$( echo $SECRET_YAML_QUALITY | base64 -d | grep DB_NAME | awk '{ print $2}' | base64 -d )
+        DB_USERNAME=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_USERNAME | awk '{ print $2}' | base64 -d )
+        DB_PASSWORD=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_PASSWORD | awk '{ print $2}' | base64 -d )
+        DB_HOST=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_HOST | awk '{ print $2}' | base64 -d )
+        DB_NAME_ORIGIN=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
         set -e
       else
         echo "-> Extracting params from \$URL_QA"
@@ -178,10 +205,10 @@ deploy:quality:helm:branches:
         if [ -n "${DATABASE_NAME_BRANCH}" ]; then
           DB_NAME_FEAT=$DATABASE_NAME_BRANCH
         else
-          DB_NAME_FEAT=$( echo $SECRET_YAML | base64 -d | grep DB_NAME | awk '{ print $2}' | base64 -d )
+          DB_NAME_FEAT=$( echo $BRANCH_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
           if [ -z "${DB_NAME_FEAT}" ]; then
             # if the secret does not have DB_NAME, it means we only have the url schema way
-            URL_BRANCH=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
+            URL_BRANCH=$( echo $BRANCH_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
             DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
           fi
         fi
