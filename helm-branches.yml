@@ -194,11 +194,10 @@ deploy:quality:helm:branches:
       fi
 
       echo "checking if needed params are there!"
-      for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
+      for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME_ORIGIN"; do
         if [ -z "${!var}" ]; then
           echo "-> Missing both '${var}' variable or/and DATABASE_URL! Not proceeding with DB cloning"
           no_db=1
-          break
         fi
       done
 
@@ -223,7 +222,7 @@ deploy:quality:helm:branches:
         mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
       else
         echo
-        echo "-> [ERROR] Some variables are missing. Cannot proceed to import db"
+        echo "-> [Warning] Some variables are missing. Cannot proceed to import db"
         echo
       fi
 
