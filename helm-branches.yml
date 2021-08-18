@@ -9,7 +9,6 @@ deploy:quality:helm:branches:
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
     NAMESPACE: ${NAMESPACE_QUALITY}
-    #SECRET_YAML: ${SECRET_YAML_FEATURE}
     ENVIRONMENT: feature
     CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
   before_script:
@@ -22,7 +21,7 @@ deploy:quality:helm:branches:
     # DATABASE_NAME_BRANCH (pilots DB_NAME_FEAT; default DB_HOST which comes from SECRET_YAML_QUALITY
     #  \_____________ OR in case of no DB_HOST,  default *comes from* URL_BRANCH 'disassembled', which comes from SECRET_YAML)
     ###
-    - |
+    - &dbcheckvars |
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
           if [ -z "${!var}" ]; then
@@ -30,7 +29,7 @@ deploy:quality:helm:branches:
             exit 1
           fi
       done
-    - |
+    - &dbactivate |
       # ACTIVATION PHASE
 
       echo "${GOOGLE_KEY}" > /tmp/key.json
@@ -42,7 +41,7 @@ deploy:quality:helm:branches:
       echo
       echo "-> Google project '${GOOGLE_PROJECT}' configured!"
       echo
-    - |
+    - &dbclusterconnect |
       # CLUSTER CONNECTION PHASE
 
       gcloud container clusters get-credentials --zone "${CLUSTER_ZONE}" "${CLUSTER_NAME}"
@@ -63,7 +62,7 @@ deploy:quality:helm:branches:
 
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
 
-    - |
+    - &dbsecretid |
       # SECRETS OPERATIONS: Identification
       # we need SECRET_YAML_QUALITY to perform DB cloning
       # (it contains quality DB name, whereas SECRET_YAML should
@@ -78,6 +77,10 @@ deploy:quality:helm:branches:
       fi
 
     - |
+      # Set kubectl command to delete
+      KUBECTL_COMMAND=( kubectl apply -f /tmp/secrets.yaml )
+
+    - &dbkubectlsecret |
       # SECRETS OPERATIONS: application
       # Priority: file in repo, then SECRET_YAML
 
@@ -111,14 +114,14 @@ deploy:quality:helm:branches:
 
         envsubst < /tmp/secrets.yaml > /tmp/secrets.yaml.tmp && mv /tmp/secrets.yaml.tmp /tmp/secrets.yaml
 
-        kubectl apply -f /tmp/secrets.yaml
+        "${KUBECTL_COMMAND[@]}"
 
         echo
         echo "-> Secrets deployed!"
         echo
       fi
 
-    - |
+    - &dbsecretunmangling |
       # SECRETS OPERATIONS: unmangling
 
       # We have this from above
@@ -155,6 +158,7 @@ deploy:quality:helm:branches:
         DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
       fi
 
+    - &dbfindname |
       # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
       if [ -n "${APP_NAME_BRANCH}" ]; then
         APP_NAME=${APP_NAME_BRANCH}
@@ -164,6 +168,12 @@ deploy:quality:helm:branches:
       fi
 
     - |
+      # Define db operations (three)
+      DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
+      DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
+      DB_OP_THREE=( mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; } )
+
+    - &dboperations |
       # CLONE DB phase
       # the db parameters could be in two formats:
       # - all parameters stored in different variables (DB_USER, DB_PASS, DB_HOST...)
@@ -217,9 +227,12 @@ deploy:quality:helm:branches:
         echo "-> Cloning db "
         echo
 
-        mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
-        mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
-        mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
+        "${DB_OP_ONE[@]}"
+        "${DB_OP_TWO[@]}"
+        "${DB_OP_THREE[@]}"
+        # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
+        # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
+        # mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
       else
         echo
         echo "-> [Warning] Some variables are missing. Cannot proceed to import db"
@@ -279,54 +292,32 @@ stop:quality:
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
-    #SECRET_YAML: ${SECRET_YAML_QUALITY}
     NAMESPACE: ${NAMESPACE_QUALITY}
     ENVIRONMENT: feature
     APP_NAME: ${CI_COMMIT_REF_SLUG}
   before_script:
+    - *dbcheckvars
+    - *dbactivate
+    - *dbclusterconnect
+    - *dbsecretid
     - |
-      # CHECK VARIABLES PHASE
-      for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
-          if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
-            exit 1
-          fi
-      done
+      # Set kubectl command to delete
+      KUBECTL_COMMAND=( kubectl delete -f /tmp/secrets.yaml )
+
+    - *dbkubectlsecret
+    - *dbsecretunmangling
     - |
-      # use a specific CI/CD variable if SECRET_BRANCH is specified in gitlab-ci
-      if [ -n "${SECRET_BRANCH}" ]; then
-        export SECRET_YAML=${!SECRET_BRANCH}
-      # otherwise, use default SECRET_YAML_FEATURE CI/CD variable
-      else
-        export SECRET_YAML=${SECRET_YAML_FEATURE}
-      fi
+      # Define db operations (two)
+      DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
+      DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "DROP DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
+      DB_OP_THREE=( )
+
+    - *dboperations
+    - *dbfindname
     - |
-      # REMOVE DB
-      set +e
-      URL=$( echo $SECRET_YAML | base64 -d | grep DATABASE_URL | awk '{ print $2}' | base64 -d )
-      set -e
-      echo "URL=${URL}"
-      if [ -z "${URL}" ]; then
-        set +e
-        DB_USERNAME=$( echo $SECRET_YAML | base64 -d | grep DB_USERNAME | awk '{ print $2}' | base64 -d )
-        DB_PASSWORD=$( echo $SECRET_YAML | base64 -d | grep DB_PASSWORD | awk '{ print $2}' | base64 -d )
-        DB_HOST=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-        DB_NAME=$( echo $SECRET_YAML | base64 -d | grep DB_HOST | awk '{ print $2}' | base64 -d )
-        set -e
-        for var in "DB_USERNAME" "DB_PASSWORD" "DB_HOST" "DB_NAME"; do
-          if [ -z "${!var}" ]; then
-            echo "Warning: Missing '${var}' variable or DATABASE_URL! Not proceeding with DB deletion"
-            no_db=1
-            break
-          fi
-        done
-        if [ -z "${no_db}" ]; then
-          mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
-          mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "DROP DATABASE $DB_NAME;" || { echo 'DB deletion failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
-        else
-          echo "no_db option was set"
-        fi
-      else
-        echo $URL | awk -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "DROP DATABASE " "\x60" $8 "\x60"";" "\x27" }'
-        eval $( echo $URL | awk -F [\/:@?] '{print "mysql -u" $4 " -p" $5 " -h" $6 " -e" " \x27" "DROP DATABASE " "\x60" $8 "\x60"";" "\x27" }' ) || { echo 'DB deletion failed with URL! Please check credentials' ; exit 1; }
-      fi
+      # Uninstall helm release
+      helm uninstall "${APP_NAME}" --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
+    - |
+      echo
+      echo "-> Uninstall completed successfully
+      echo
