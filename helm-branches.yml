@@ -295,7 +295,7 @@ stop:quality:
     NAMESPACE: ${NAMESPACE_QUALITY}
     ENVIRONMENT: feature
     APP_NAME: ${CI_COMMIT_REF_SLUG}
-  before_script:
+  script:
     - *dbcheckvars
     - *dbactivate
     - *dbclusterconnect
