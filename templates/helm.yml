@@ -1,5 +1,5 @@
 .helm:
-  image: jobtomelabs/helm-sops-mysql:3.2.0
+  image: jobtomelabs/helm-sops:3.2.0
 
 .helm:deploy:
   extends: .helm
@@ -53,10 +53,6 @@
         ENVIRONMENT=production
       fi
 
-      if [ -n "${APP_NAME_BRANCH}" ]; then
-        ENVIRONMENT=feature
-      fi
-
       if [ -d "${HELM_DIR}/${ENVIRONMENT}" ]; then
         echo
         echo "-> Getting manifests from directory '${ENVIRONMENT}'"
@@ -78,7 +74,7 @@
             echo
           fi
       fi
-    
+
     - |
       # SECRETS APPLICATION
       # Priority: file in repo, then SECRET_YAML
@@ -140,15 +136,8 @@
 
       chmod 755 /tmp/replacer.sh
 
-      if [ -n "${APP_NAME_BRANCH}" ]; then
-        echo ${APP_NAME}
-        echo ${DOMAIN}
-        #helm template "current-repo/${CHART_NAME}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
-        helm upgrade --install --atomic "${APP_NAME_BRANCH}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
-      else
-        helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
-      fi
-      
+      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
+
       sleep 5
 
       echo
@@ -213,7 +202,7 @@ deploy:quality:helm:
 
         exit 1
       fi
- 
+
 .stop:
   extends: .helm
   variables:
@@ -230,19 +219,19 @@ deploy:quality:helm:
     - *helmsetup
     - |
       # HELM TEST
-      
+
       echo
       echo "-> Removing ${APP_NAME} ! Version of the tests: ${CHART_VERSION}"
       echo
-      
+
       if [ -z "${TIMEOUT}" ]; then
         TIMEOUT=600s
       fi
-      
+
       STATUS=0
-      
+
       helm delete "${APP_NAME}" --namespace "${NAMESPACE}" || STATUS=1;
-      
+
       if [ "${STATUS}" = "1" ]; then
         echo
         echo "-> Removal has failed on ${ENVIRONMENT} for '${APP_NAME}' !"
