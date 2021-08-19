@@ -126,7 +126,7 @@ deploy:quality:helm:branches:
       # SECRETS OPERATIONS: unmangling
 
       # We have this from above
-      BRANCH_VARS=$( tac /tmp/secrets.yaml | base64 -d | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
+      BRANCH_VARS=$( tac /tmp/secrets.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
 
       # It is assumed that the quality secret cannot be missing in a feature branch
       touch /tmp/secrets-qa.yaml
@@ -147,7 +147,7 @@ deploy:quality:helm:branches:
 
       envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
 
-      QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | base64 -d | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
+      QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
 
     - |
       # DOMAIN OPERATIONS
