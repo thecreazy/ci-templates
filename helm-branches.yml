@@ -172,7 +172,8 @@ deploy:quality:helm:branches:
       # Define db operations (three)
       DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
       DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
-      DB_OP_THREE=( mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; } )
+      DB_OP_THREE=( mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks )
+      DB_OP_PIPED=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT )
 
     - &dboperations |
       # CLONE DB phase
@@ -228,9 +229,9 @@ deploy:quality:helm:branches:
         echo "-> Cloning db "
         echo
 
-        "${DB_OP_ONE[@]}"
-        "${DB_OP_TWO[@]}"
-        "${DB_OP_THREE[@]}"
+        "${DB_OP_ONE[@]}" || { echo 'DB login failed! Please check credentials' ; exit 1; }
+        "${DB_OP_TWO[@]}" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
+        "${DB_OP_THREE[@]}" | "${DB_OP_PIPED[@]}" || { echo 'DB cloning failed!' ; exit 1; }
         # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
         # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
         # mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
@@ -312,6 +313,7 @@ stop:quality:
       DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
       DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "DROP DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
       DB_OP_THREE=( )
+      DB_OP_PIPED=( )
 
     - *dboperations
     - *dbfindname
