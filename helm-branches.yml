@@ -198,10 +198,12 @@ deploy:quality:helm:branches:
         set -e
       else
         echo "-> Extracting params from \$URL_QA"
+        set +e
         DB_USERNAME=$( echo $URL_QA | awk -F [\/:@?] '{print $4}')
         DB_PASSWORD=$( echo $URL_QA | awk -F [\/:@?] '{print $5}')
         DB_HOST=$( echo $URL_QA | awk -F [\/:@?] '{print $6}')
         DB_NAME_ORIGIN=$( echo $URL_QA | awk -F [\/:@?] '{print $8}')
+        set -e
       fi
 
       echo "checking if needed params are there!"
@@ -216,7 +218,9 @@ deploy:quality:helm:branches:
         if [ -n "${DATABASE_NAME_BRANCH}" ]; then
           DB_NAME_FEAT=$DATABASE_NAME_BRANCH
         else
+          set +e
           DB_NAME_FEAT=$( echo $BRANCH_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+          set -e
           if [ -z "${DB_NAME_FEAT}" ]; then
             # if the secret does not have DB_NAME, it means we only have the url schema way
             URL_BRANCH=$( echo $BRANCH_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
