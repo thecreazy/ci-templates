@@ -186,7 +186,6 @@ deploy:quality:helm:branches:
       echo "-> Finding parameters "
       set +e
       URL_QA=$( echo $QUALITY_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
-      echo "URL_QA=${URL_QA}"
       set -e
       if [ -z "${URL_QA}" ]; then
         echo "-> empty \$URL_QA, proceeding to get all parameters singularly"
