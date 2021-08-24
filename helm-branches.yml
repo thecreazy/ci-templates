@@ -331,5 +331,6 @@ stop:quality:
       echo
       echo "-> Uninstall completed successfully
       echo
-  only:
-    - merge_requests
+  rules:
+    - if: $CI_MERGE_REQUEST_ID && $CI_COMMIT_REF_NAME =~ /^feat/
+      when: manual
