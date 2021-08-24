@@ -331,3 +331,5 @@ stop:quality:
       echo
       echo "-> Uninstall completed successfully
       echo
+  only:
+    - merge_requests
