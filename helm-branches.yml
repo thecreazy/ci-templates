@@ -170,9 +170,9 @@ deploy:quality:helm:branches:
 
     - |
       # Define db operations (three)
-      DB_OP_ONE=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME\" )
+      DB_OP_ONE=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\" )
       DB_OP_TWO=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"CREATE DATABASE \$DB_NAME_FEAT\" )
-      DB_OP_THREE=( mysqldump -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST \$DB_NAME --opt --single-transaction --skip-add-locks )
+      DB_OP_THREE=( mysqldump -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST \$DB_NAME_ORIGIN --opt --single-transaction --skip-add-locks )
       DB_OP_PIPED=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST --max_allowed_packet=32M \$DB_NAME_FEAT )
 
     - &dboperations |
@@ -232,10 +232,12 @@ deploy:quality:helm:branches:
         echo "-> Cloning db "
         echo
 
+        set +e
         DB_ONE=( $(echo ${DB_OP_ONE[@]} | envsubst ) )
         DB_TWO=( $(echo ${DB_OP_TWO[@]} | envsubst ) )
         DB_THREE=( $(echo ${DB_OP_THREE[@]} | envsubst ) )
         DB_PIPED=( $(echo ${DB_OP_PIPED[@]} | envsubst ) )
+        set -e
 
         "${DB_ONE[@]}" || { echo 'DB login failed! Please check credentials' ; exit 1; }
         "${DB_TWO[@]}" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
@@ -316,8 +318,8 @@ stop:quality:
     - *dbsecretunmangling
     - |
       # Define db operations (two)
-      DB_OP_ONE=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME\" )
-      DB_OP_TWO=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"DROP DATABASE \$DB_NAME_FEAT;\" )
+      DB_OP_ONE=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\" )
+      DB_OP_TWO=( mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"DROP DATABASE \$DB_NAME_FEAT\" )
       DB_OP_THREE=( )
       DB_OP_PIPED=( )
 
