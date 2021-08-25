@@ -62,6 +62,7 @@ deploy:quality:helm:branches:
       fi
 
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
+      envsubst < "${HELM_FILES_PATH}"/values.yaml > /tmp/values.yaml
 
     - &dbsecretid |
       # SECRETS OPERATIONS: Identification
@@ -170,9 +171,10 @@ deploy:quality:helm:branches:
 
     - |
       # Define db operations (three)
-      DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
-      DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
-      DB_OP_THREE=( mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; } )
+      DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
+      DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"CREATE DATABASE \$DB_NAME_FEAT\""
+      DB_OP_THREE="mysqldump -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST \$DB_NAME_ORIGIN --opt --single-transaction --skip-add-locks"
+      DB_OP_PIPED="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST --max_allowed_packet=32M \$DB_NAME_FEAT"
 
     - &dboperations |
       # CLONE DB phase
@@ -185,23 +187,24 @@ deploy:quality:helm:branches:
       echo "-> Finding parameters "
       set +e
       URL_QA=$( echo $QUALITY_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
-      echo "URL_QA=${URL_QA}"
       set -e
       if [ -z "${URL_QA}" ]; then
         echo "-> empty \$URL_QA, proceeding to get all parameters singularly"
         set +e
         # Take user, pass, and host from the secret
-        DB_USERNAME=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_USERNAME | awk '{ print $2}' | base64 -d )
-        DB_PASSWORD=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_PASSWORD | awk '{ print $2}' | base64 -d )
-        DB_HOST=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_HOST | awk '{ print $2}' | base64 -d )
-        DB_NAME_ORIGIN=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+        export DB_USERNAME=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_USERNAME | awk '{ print $2}' | base64 -d )
+        export DB_PASSWORD=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_PASSWORD | awk '{ print $2}' | base64 -d )
+        export DB_HOST=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_HOST | awk '{ print $2}' | base64 -d )
+        export DB_NAME_ORIGIN=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
         set -e
       else
         echo "-> Extracting params from \$URL_QA"
-        DB_USERNAME=$( echo $URL_QA | awk -F [\/:@?] '{print $4}')
-        DB_PASSWORD=$( echo $URL_QA | awk -F [\/:@?] '{print $5}')
-        DB_HOST=$( echo $URL_QA | awk -F [\/:@?] '{print $6}')
-        DB_NAME_ORIGIN=$( echo $URL_QA | awk -F [\/:@?] '{print $8}')
+        set +e
+        export DB_USERNAME=$( echo $URL_QA | awk -F [\/:@?] '{print $4}')
+        export DB_PASSWORD=$( echo $URL_QA | awk -F [\/:@?] '{print $5}')
+        export DB_HOST=$( echo $URL_QA | awk -F [\/:@?] '{print $6}')
+        export DB_NAME_ORIGIN=$( echo $URL_QA | awk -F [\/:@?] '{print $8}')
+        set -e
       fi
 
       echo "checking if needed params are there!"
@@ -214,13 +217,15 @@ deploy:quality:helm:branches:
 
       if [ -z "${no_db}" ]; then
         if [ -n "${DATABASE_NAME_BRANCH}" ]; then
-          DB_NAME_FEAT=$DATABASE_NAME_BRANCH
+          export DB_NAME_FEAT=$DATABASE_NAME_BRANCH
         else
-          DB_NAME_FEAT=$( echo $BRANCH_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+          set +e
+          export DB_NAME_FEAT=$( echo $BRANCH_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+          set -e
           if [ -z "${DB_NAME_FEAT}" ]; then
             # if the secret does not have DB_NAME, it means we only have the url schema way
             URL_BRANCH=$( echo $BRANCH_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
-            DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
+            export DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
           fi
         fi
 
@@ -228,12 +233,10 @@ deploy:quality:helm:branches:
         echo "-> Cloning db "
         echo
 
-        "${DB_OP_ONE[@]}"
-        "${DB_OP_TWO[@]}"
-        "${DB_OP_THREE[@]}"
-        # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
-        # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
-        # mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
+        eval "${DB_OP_ONE[@]}" || { echo 'DB login failed! Please check credentials' ; exit 1; }
+        eval "${DB_OP_TWO[@]}" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
+        eval "${DB_OP_THREE[@]}" | eval "${DB_OP_PIPED[@]}" || { echo 'DB cloning failed!' ; exit 1; }
+
       else
         echo
         echo "-> [Warning] Some variables are missing. Cannot proceed to import db"
@@ -289,13 +292,12 @@ stop:quality:
     action: stop
   stage: stop
   variables:
-    CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
     NAMESPACE: ${NAMESPACE_QUALITY}
     ENVIRONMENT: feature
-    APP_NAME: ${CI_COMMIT_REF_SLUG}
+    CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
   script:
     - *dbcheckvars
     - *dbactivate
@@ -309,9 +311,10 @@ stop:quality:
     - *dbsecretunmangling
     - |
       # Define db operations (two)
-      DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
-      DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "DROP DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
-      DB_OP_THREE=( )
+      DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
+      DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"DROP DATABASE \$DB_NAME_FEAT\""
+      DB_OP_THREE="echo"
+      DB_OP_PIPED="echo"
 
     - *dboperations
     - *dbfindname
@@ -322,3 +325,6 @@ stop:quality:
       echo
       echo "-> Uninstall completed successfully
       echo
+  rules:
+    - if: $CI_MERGE_REQUEST_ID && $CI_COMMIT_REF_NAME =~ /^feat/
+      when: manual
