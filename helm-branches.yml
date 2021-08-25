@@ -62,6 +62,7 @@ deploy:quality:helm:branches:
       fi
 
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
+      envsubst < "${HELM_FILES_PATH}"/values.yaml > /tmp/values.yaml
 
     - &dbsecretid |
       # SECRETS OPERATIONS: Identification
