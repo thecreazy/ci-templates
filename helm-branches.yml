@@ -3,7 +3,7 @@ deploy:quality:helm:branches:
   stage: deploy
   environment:
     name: review/$CI_BUILD_REF_NAME
-    url: https://${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+    url: https://x${CI_COMMIT_REF_SLUG}x.${DOMAIN_QUALITY}
     on_stop: stop:quality
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
@@ -154,10 +154,10 @@ deploy:quality:helm:branches:
       # DOMAIN OPERATIONS
       # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
       if [ -n "${DOMAIN_BRANCH}" ]; then
-        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
+        DOMAIN=x${CI_COMMIT_REF_SLUG}x.${DOMAIN_BRANCH}
       # otherwise, use default DOMAIN_QUALITY
       else
-        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+        DOMAIN=x${CI_COMMIT_REF_SLUG}x.${DOMAIN_QUALITY}
       fi
 
     - &dbfindname |
