@@ -59,22 +59,29 @@ deploy:quality:helm:branches:
       # DOMAIN OPERATIONS
       # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
       if [ -n "${DOMAIN_BRANCH}" ]; then
-        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
+        export DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
       # otherwise, use default DOMAIN_QUALITY
       else
-        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+        export DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+      fi
+
+    - &dbfindname |
+      # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
+      if [ -n "${APP_NAME_BRANCH}" ]; then
+        export APP_NAME=${APP_NAME_BRANCH}
+      # otherwise, use default APP_NAME (i.e. COMMIT_REF_SLUG)
+      else
+        export APP_NAME=${CI_COMMIT_REF_SLUG}
       fi
 
     - |
-      # CHECK DIRS
+      # CHECK DIRS AND CREATE VALUES
       if [ -z "${HELM_DIR}" ]; then
         HELM_DIR=helm
       fi
 
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
       envsubst < "${HELM_FILES_PATH}"/values.yaml > /tmp/values.yaml
-
-      cat /tmp/values.yaml
 
     - &dbsecretid |
       # SECRETS OPERATIONS: Identification
@@ -161,15 +168,6 @@ deploy:quality:helm:branches:
       envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
 
       QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
-
-    - &dbfindname |
-      # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
-      if [ -n "${APP_NAME_BRANCH}" ]; then
-        APP_NAME=${APP_NAME_BRANCH}
-      # otherwise, use default APP_NAME (i.e. COMMIT_REF_SLUG)
-      else
-        APP_NAME=${CI_COMMIT_REF_SLUG}
-      fi
 
     - |
       # Define db operations (three)
@@ -307,6 +305,7 @@ stop:quality:
     - *dbcheckvars
     - *dbactivate
     - *dbclusterconnect
+    - *dbfindname
     - *dbsecretid
     - |
       # Set kubectl command to delete
@@ -322,7 +321,6 @@ stop:quality:
       DB_OP_PIPED="echo"
 
     - *dboperations
-    - *dbfindname
     - |
       # Uninstall helm release
       helm uninstall "${APP_NAME}" --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
