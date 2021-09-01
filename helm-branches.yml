@@ -280,7 +280,7 @@ deploy:quality:helm:branches:
       sleep 5
 
       echo
-      echo "-> ${APP_NAME} released!
+      echo "-> ${APP_NAME} released!"
       echo
   only:
     - merge_requests
