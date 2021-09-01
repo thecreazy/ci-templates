@@ -317,8 +317,8 @@ stop:quality:
       # Define db operations (two)
       DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
       DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"DROP DATABASE \$DB_NAME_FEAT\""
-      DB_OP_THREE="echo"
-      DB_OP_PIPED="echo"
+      DB_OP_THREE=""
+      DB_OP_PIPED=""
 
     - *dboperations
     - |
