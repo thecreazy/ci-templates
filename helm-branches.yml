@@ -326,7 +326,7 @@ stop:quality:
       helm uninstall "${APP_NAME}" --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
     - |
       echo
-      echo "-> Uninstall completed successfully
+      echo "-> Uninstall completed successfully"
       echo
   rules:
     - if: $CI_MERGE_REQUEST_ID && $CI_COMMIT_REF_NAME =~ /^feat/
