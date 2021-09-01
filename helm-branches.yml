@@ -270,13 +270,17 @@ deploy:quality:helm:branches:
 
       chmod 755 /tmp/replacer.sh
 
+      echo
+      echo "-> App ${APP_NAME} is going to be released! Chart version is ${CHART_VERSION}"
+      echo "--> This is a feature branch! You can check it at ${DOMAIN}"
+      echo
+
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
 
       sleep 5
 
       echo
-      echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
-      echo "--> This is a feature branch! You can check it at ${DOMAIN}"
+      echo "-> ${APP_NAME} released!
       echo
 
   only:
