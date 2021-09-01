@@ -282,7 +282,10 @@ deploy:quality:helm:branches:
       echo
       echo "-> ${APP_NAME} released!
       echo
-
+  artifacts:
+    paths:
+      - /tmp/values.yaml
+    expire_in: 1 day
   only:
     - merge_requests
   except:
