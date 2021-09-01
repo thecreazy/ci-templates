@@ -64,6 +64,8 @@ deploy:quality:helm:branches:
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
       envsubst < "${HELM_FILES_PATH}"/values.yaml > /tmp/values.yaml
 
+      cat /tmp/values.yaml
+
     - &dbsecretid |
       # SECRETS OPERATIONS: Identification
       # we need SECRET_YAML_QUALITY to perform DB cloning
