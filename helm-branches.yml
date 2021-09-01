@@ -3,7 +3,7 @@ deploy:quality:helm:branches:
   stage: deploy
   environment:
     name: review/$CI_BUILD_REF_NAME
-    url: https://x${CI_COMMIT_REF_SLUG}x.${DOMAIN_QUALITY}
+    url: https://${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
     on_stop: stop:quality
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
@@ -56,6 +56,16 @@ deploy:quality:helm:branches:
       echo
 
     - |
+      # DOMAIN OPERATIONS
+      # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
+      if [ -n "${DOMAIN_BRANCH}" ]; then
+        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
+      # otherwise, use default DOMAIN_QUALITY
+      else
+        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+      fi
+
+    - |
       # CHECK DIRS
       if [ -z "${HELM_DIR}" ]; then
         HELM_DIR=helm
@@ -63,8 +73,6 @@ deploy:quality:helm:branches:
 
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
       envsubst < "${HELM_FILES_PATH}"/values.yaml > /tmp/values.yaml
-
-      cat /tmp/values.yaml
 
     - &dbsecretid |
       # SECRETS OPERATIONS: Identification
@@ -151,16 +159,6 @@ deploy:quality:helm:branches:
       envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
 
       QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
-
-    - |
-      # DOMAIN OPERATIONS
-      # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
-      if [ -n "${DOMAIN_BRANCH}" ]; then
-        DOMAIN=x${CI_COMMIT_REF_SLUG}x.${DOMAIN_BRANCH}
-      # otherwise, use default DOMAIN_QUALITY
-      else
-        DOMAIN=x${CI_COMMIT_REF_SLUG}x.${DOMAIN_QUALITY}
-      fi
 
     - &dbfindname |
       # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
@@ -269,7 +267,6 @@ deploy:quality:helm:branches:
       #!/bin/bash
       sed 's/name: "${NAMESPACE}"/name: "${APP_NAME}"/g' | sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml|configmap.yaml/,/---/'
       EOF
-      exit 0
 
       chmod 755 /tmp/replacer.sh
 
@@ -285,10 +282,6 @@ deploy:quality:helm:branches:
       echo
       echo "-> ${APP_NAME} released!
       echo
-  artifacts:
-    paths:
-      - /tmp/values.yaml
-    expire_in: 1 day
   only:
     - merge_requests
   except:
