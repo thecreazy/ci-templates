@@ -1,6 +1,6 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.30.17/docker.yml'
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.30.17/templates/cloudrun.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.30.18/docker.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v2.30.18/templates/cloudrun.yml'
 
 deploy:quality:
   extends: .cloudrun:deploy

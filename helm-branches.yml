@@ -74,7 +74,7 @@ deploy:quality:helm:branches:
         export APP_NAME=${CI_COMMIT_REF_SLUG}
       fi
 
-    - |
+    - &dbhelmdir |
       # CHECK DIRS AND CREATE VALUES
       if [ -z "${HELM_DIR}" ]; then
         HELM_DIR=helm
@@ -175,6 +175,7 @@ deploy:quality:helm:branches:
       DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"CREATE DATABASE IF NOT EXISTS \$DB_NAME_FEAT\""
       DB_OP_THREE="mysqldump -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST \$DB_NAME_ORIGIN --opt --single-transaction --skip-add-locks"
       DB_OP_PIPED="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST --max_allowed_packet=32M \$DB_NAME_FEAT"
+      OPERATION="Cloning"
 
     - &dboperations |
       # CLONE DB phase
@@ -230,7 +231,7 @@ deploy:quality:helm:branches:
         fi
 
         echo
-        echo "-> Cloning db "
+        echo "-> ${OPERATION} db "
         echo
 
         eval "${DB_OP_ONE[@]}" || { echo 'DB login failed! Please check credentials' ; exit 1; }
@@ -289,6 +290,7 @@ deploy:quality:helm:branches:
       - $CI_COMMIT_REF_NAME !~ /^feat/
 
 stop:quality:
+  image: jobtomelabs/helm-sops-mysql:3.2.0
   allow_failure: true
   environment:
     name: review/$CI_BUILD_REF_NAME
@@ -306,6 +308,7 @@ stop:quality:
     - *dbactivate
     - *dbclusterconnect
     - *dbfindname
+    - *dbhelmdir
     - *dbsecretid
     - |
       # Set kubectl command to delete
@@ -317,12 +320,17 @@ stop:quality:
       # Define db operations (two)
       DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
       DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"DROP DATABASE \$DB_NAME_FEAT\""
-      DB_OP_THREE="echo"
-      DB_OP_PIPED="echo"
+      DB_OP_THREE=""
+      DB_OP_PIPED=""
+      OPERATION="Dropping"
 
     - *dboperations
     - |
       # Uninstall helm release
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
       helm uninstall "${APP_NAME}" --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
     - |
       echo
