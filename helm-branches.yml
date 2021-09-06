@@ -166,16 +166,20 @@ deploy:quality:helm:branches:
       fi
 
       envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
-
+      
+      set +e
       QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
-
+      set -e
+      
     - |
       # Define db operations (three)
+      set +e
       DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
       DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"CREATE DATABASE IF NOT EXISTS \$DB_NAME_FEAT\""
       DB_OP_THREE="mysqldump -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST \$DB_NAME_ORIGIN --opt --single-transaction --skip-add-locks"
       DB_OP_PIPED="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST --max_allowed_packet=32M \$DB_NAME_FEAT"
       OPERATION="Cloning"
+      set -e
 
     - &dboperations |
       # CLONE DB phase
