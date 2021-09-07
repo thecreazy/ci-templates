@@ -56,12 +56,32 @@ deploy:quality:helm:branches:
       echo
 
     - |
-      # CHECK DIRS
+      # DOMAIN OPERATIONS
+      # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
+      if [ -n "${DOMAIN_BRANCH}" ]; then
+        export DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
+      # otherwise, use default DOMAIN_QUALITY
+      else
+        export DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
+      fi
+
+    - &dbfindname |
+      # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
+      if [ -n "${APP_NAME_BRANCH}" ]; then
+        export APP_NAME=${APP_NAME_BRANCH}
+      # otherwise, use default APP_NAME (i.e. COMMIT_REF_SLUG)
+      else
+        export APP_NAME=${CI_COMMIT_REF_SLUG}
+      fi
+
+    - &dbhelmdir |
+      # CHECK DIRS AND CREATE VALUES
       if [ -z "${HELM_DIR}" ]; then
         HELM_DIR=helm
       fi
 
       HELM_FILES_PATH="${HELM_DIR}/${ENVIRONMENT}"
+      envsubst < "${HELM_FILES_PATH}"/values.yaml > /tmp/values.yaml
 
     - &dbsecretid |
       # SECRETS OPERATIONS: Identification
@@ -126,8 +146,10 @@ deploy:quality:helm:branches:
       # SECRETS OPERATIONS: unmangling
 
       # We have this from above
+      set +e
       BRANCH_VARS=$( tac /tmp/secrets.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
-
+      set -e
+      
       # It is assumed that the quality secret cannot be missing in a feature branch
       touch /tmp/secrets-qa.yaml
 
@@ -146,33 +168,20 @@ deploy:quality:helm:branches:
       fi
 
       envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
-
+      
+      set +e
       QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
-
-    - |
-      # DOMAIN OPERATIONS
-      # use a specific domain if DOMAIN_BRANCH is specified in gitlab-ci
-      if [ -n "${DOMAIN_BRANCH}" ]; then
-        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_BRANCH}
-      # otherwise, use default DOMAIN_QUALITY
-      else
-        DOMAIN=${CI_COMMIT_REF_SLUG}.${DOMAIN_QUALITY}
-      fi
-
-    - &dbfindname |
-      # use a specific app name if APP_NAME_BRANCH is specified in gitlab-ci
-      if [ -n "${APP_NAME_BRANCH}" ]; then
-        APP_NAME=${APP_NAME_BRANCH}
-      # otherwise, use default APP_NAME (i.e. COMMIT_REF_SLUG)
-      else
-        APP_NAME=${CI_COMMIT_REF_SLUG}
-      fi
-
+      set -e
+      
     - |
       # Define db operations (three)
-      DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
-      DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
-      DB_OP_THREE=( mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; } )
+      set +e
+      DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
+      DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"CREATE DATABASE IF NOT EXISTS \$DB_NAME_FEAT\""
+      DB_OP_THREE="mysqldump -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST \$DB_NAME_ORIGIN --opt --single-transaction --skip-add-locks"
+      DB_OP_PIPED="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST --max_allowed_packet=32M \$DB_NAME_FEAT"
+      OPERATION="Cloning"
+      set -e
 
     - &dboperations |
       # CLONE DB phase
@@ -185,23 +194,24 @@ deploy:quality:helm:branches:
       echo "-> Finding parameters "
       set +e
       URL_QA=$( echo $QUALITY_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
-      echo "URL_QA=${URL_QA}"
       set -e
       if [ -z "${URL_QA}" ]; then
         echo "-> empty \$URL_QA, proceeding to get all parameters singularly"
         set +e
         # Take user, pass, and host from the secret
-        DB_USERNAME=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_USERNAME | awk '{ print $2}' | base64 -d )
-        DB_PASSWORD=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_PASSWORD | awk '{ print $2}' | base64 -d )
-        DB_HOST=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_HOST | awk '{ print $2}' | base64 -d )
-        DB_NAME_ORIGIN=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+        export DB_USERNAME=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_USERNAME | awk '{ print $2}' | base64 -d )
+        export DB_PASSWORD=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_PASSWORD | awk '{ print $2}' | base64 -d )
+        export DB_HOST=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_HOST | awk '{ print $2}' | base64 -d )
+        export DB_NAME_ORIGIN=$( echo $QUALITY_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
         set -e
       else
         echo "-> Extracting params from \$URL_QA"
-        DB_USERNAME=$( echo $URL_QA | awk -F [\/:@?] '{print $4}')
-        DB_PASSWORD=$( echo $URL_QA | awk -F [\/:@?] '{print $5}')
-        DB_HOST=$( echo $URL_QA | awk -F [\/:@?] '{print $6}')
-        DB_NAME_ORIGIN=$( echo $URL_QA | awk -F [\/:@?] '{print $8}')
+        set +e
+        export DB_USERNAME=$( echo $URL_QA | awk -F [\/:@?] '{print $4}')
+        export DB_PASSWORD=$( echo $URL_QA | awk -F [\/:@?] '{print $5}')
+        export DB_HOST=$( echo $URL_QA | awk -F [\/:@?] '{print $6}')
+        export DB_NAME_ORIGIN=$( echo $URL_QA | awk -F [\/:@?] '{print $8}')
+        set -e
       fi
 
       echo "checking if needed params are there!"
@@ -214,26 +224,26 @@ deploy:quality:helm:branches:
 
       if [ -z "${no_db}" ]; then
         if [ -n "${DATABASE_NAME_BRANCH}" ]; then
-          DB_NAME_FEAT=$DATABASE_NAME_BRANCH
+          export DB_NAME_FEAT=$DATABASE_NAME_BRANCH
         else
-          DB_NAME_FEAT=$( echo $BRANCH_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+          set +e
+          export DB_NAME_FEAT=$( echo $BRANCH_VARS | base64 -d | grep -m1 DB_NAME | awk '{ print $2}' | base64 -d )
+          set -e
           if [ -z "${DB_NAME_FEAT}" ]; then
             # if the secret does not have DB_NAME, it means we only have the url schema way
             URL_BRANCH=$( echo $BRANCH_VARS | base64 -d | grep -m1 DATABASE_URL | awk '{ print $2}' | base64 -d )
-            DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
+            export DB_NAME_FEAT=$( echo $URL_BRANCH | awk -F [\/:@?] '{print $8}')
           fi
         fi
 
         echo
-        echo "-> Cloning db "
+        echo "-> ${OPERATION} db "
         echo
 
-        "${DB_OP_ONE[@]}"
-        "${DB_OP_TWO[@]}"
-        "${DB_OP_THREE[@]}"
-        # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; }
-        # mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "CREATE DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
-        # mysqldump -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST $DB_NAME --opt --single-transaction --skip-add-locks | mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST --max_allowed_packet=32M $DB_NAME_FEAT || { echo 'DB cloning failed!' ; exit 1; }
+        eval "${DB_OP_ONE[@]}" || { echo 'DB login failed! Please check credentials' ; exit 1; }
+        eval "${DB_OP_TWO[@]}" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; }
+        eval "${DB_OP_THREE[@]}" | eval "${DB_OP_PIPED[@]}" || { echo 'DB cloning failed!' ; exit 1; }
+
       else
         echo
         echo "-> [Warning] Some variables are missing. Cannot proceed to import db"
@@ -262,20 +272,23 @@ deploy:quality:helm:branches:
     - |
       cat << EOF > /tmp/replacer.sh
       #!/bin/bash
-      sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml|configmap.yaml/,/---/'
+      sed 's/name: "${NAMESPACE}"/name: "${APP_NAME}"/g' | sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml|configmap.yaml/,/---/'
       EOF
 
       chmod 755 /tmp/replacer.sh
+
+      echo
+      echo "-> App ${APP_NAME} is going to be released! Chart version is ${CHART_VERSION}"
+      echo "--> This is a feature branch! You can check it at ${DOMAIN}"
+      echo
 
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
 
       sleep 5
 
       echo
-      echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
-      echo "--> This is a feature branch! You can check it at ${DOMAIN}"
+      echo "-> ${APP_NAME} released!"
       echo
-
   only:
     - merge_requests
   except:
@@ -283,23 +296,25 @@ deploy:quality:helm:branches:
       - $CI_COMMIT_REF_NAME !~ /^feat/
 
 stop:quality:
+  image: jobtomelabs/helm-sops-mysql:3.2.0
   allow_failure: true
   environment:
     name: review/$CI_BUILD_REF_NAME
     action: stop
   stage: stop
   variables:
-    CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
     GOOGLE_KEY: ${GOOGLE_KEY_QUALITY}
     CLUSTER_NAME: ${CLUSTER_NAME_QUALITY}
     CLUSTER_ZONE: ${CLUSTER_ZONE_QUALITY}
     NAMESPACE: ${NAMESPACE_QUALITY}
     ENVIRONMENT: feature
-    APP_NAME: ${CI_COMMIT_REF_SLUG}
+    CI_COMMIT_TAG: ${CI_COMMIT_SHORT_SHA}
   script:
     - *dbcheckvars
     - *dbactivate
     - *dbclusterconnect
+    - *dbfindname
+    - *dbhelmdir
     - *dbsecretid
     - |
       # Set kubectl command to delete
@@ -309,16 +324,24 @@ stop:quality:
     - *dbsecretunmangling
     - |
       # Define db operations (two)
-      DB_OP_ONE=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "USE $DB_NAME" || { echo 'DB login failed! Please check credentials' ; exit 1; } )
-      DB_OP_TWO=( mysql -u$DB_USERNAME -p$DB_PASSWORD -h$DB_HOST -e "DROP DATABASE $DB_NAME_FEAT;" || { echo 'DB creation failed! Please check user permission, must have CREATE, REFERENCES and DROP' ; exit 1; } )
-      DB_OP_THREE=( )
+      DB_OP_ONE="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"USE \$DB_NAME_ORIGIN\""
+      DB_OP_TWO="mysql -u\$DB_USERNAME -p\$DB_PASSWORD -h\$DB_HOST -e \"DROP DATABASE \$DB_NAME_FEAT\""
+      DB_OP_THREE=""
+      DB_OP_PIPED=""
+      OPERATION="Dropping"
 
     - *dboperations
-    - *dbfindname
     - |
       # Uninstall helm release
+      if [ -z "${TIMEOUT}" ]; then
+        TIMEOUT=600s
+      fi
+
       helm uninstall "${APP_NAME}" --timeout "${TIMEOUT}" --namespace "${NAMESPACE}"
     - |
       echo
-      echo "-> Uninstall completed successfully
+      echo "-> Uninstall completed successfully"
       echo
+  rules:
+    - if: $CI_MERGE_REQUEST_ID && $CI_COMMIT_REF_NAME =~ /^feat/
+      when: manual
