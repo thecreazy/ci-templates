@@ -32,3 +32,7 @@ test:api:
     name: test_reports
     paths:
       - /opt/test_reports
+  except:
+    variables:
+      - $SKIP_CI_TEST == "true"
+      - $CI_FAST_TRACK == "true"
