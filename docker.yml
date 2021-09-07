@@ -88,7 +88,7 @@ build:
     - merge_requests
   except:
     variables:
-      - ${SKIP_CI_BUILD} == "true"
+      - $SKIP_CI_BUILD == "true"
 
 build:cache:
   stage: build
@@ -228,8 +228,8 @@ build:latest:
     refs:
       - branches
     variables:
-      - ${SKIP_CI_BUILD_LATEST} == "true"
-      - ${CI_FAST_TRACK} == "true"
+      - $SKIP_CI_BUILD_LATEST == "true"
+      - $CI_FAST_TRACK == "true"
 
 push:
   stage: push
@@ -258,4 +258,4 @@ push:
     refs:
       - branches
     variables:
-      - ${SKIP_CI_PUSH} == "true"
+      - $SKIP_CI_PUSH == "true"
