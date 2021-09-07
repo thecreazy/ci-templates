@@ -55,5 +55,5 @@ test:docker-security:
     - merge_requests
   except:
     variables:
-      - ${SKIP_CI_TEST} == "true"
-      - ${CI_FAST_TRACK} == "true"
+      - $SKIP_CI_TEST == "true"
+      - $CI_FAST_TRACK == "true"

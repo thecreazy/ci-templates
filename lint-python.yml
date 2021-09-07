@@ -23,5 +23,5 @@ lint:python:
       echo
   except:
     variables:
-      - ${SKIP_CI_LINT} == "true"
-      - ${CI_FAST_TRACK} == "true"
+      - $SKIP_CI_LINT == "true"
+      - $CI_FAST_TRACK == "true"
