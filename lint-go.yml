@@ -38,3 +38,7 @@ lint:go:
       echo
       echo "-> Go files checked!"
       echo
+  except:
+    variables:
+      - ${SKIP_CI_LINT} == "true"
+      - ${CI_FAST_TRACK} == "true"

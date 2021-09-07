@@ -21,3 +21,7 @@ lint:python:
       echo
       echo "-> Code checked!"
       echo
+  except:
+    variables:
+      - ${SKIP_CI_LINT} == "true"
+      - ${CI_FAST_TRACK} == "true"
