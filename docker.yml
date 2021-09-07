@@ -167,7 +167,7 @@ build:cache:
     - merge_requests
   except:
     variables:
-      - ${CI_FAST_TRACK} == "true"
+      - $CI_FAST_TRACK == "true"
 
 build:latest:
   stage: build
