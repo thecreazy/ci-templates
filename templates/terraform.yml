@@ -1,12 +1,12 @@
 .terraform:
   image:
-    name: hashicorp/terraform:0.12.29
+    name: hashicorp/terraform:1.0.0
     entrypoint: [""]
   variables:
     GIT_DEPTH: 1
 
 .terraform-security:
   image:
-    name: linuxbandit/terraform-with-tfsec:v0.12.29
+    name: linuxbandit/terraform-with-tfsec:v1.0.0
   variables:
     GIT_DEPTH: 1
