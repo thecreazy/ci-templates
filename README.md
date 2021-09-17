@@ -1,8 +1,8 @@
 # Default CI templates
 
-This repo contains a series of templates that is used inside the CI/CD pipeline of JTM.
+This repo contains a series of templates that is used inside the CI/CD pipeline of Jobtome.
 
-The syntax here is valid for a Gitlab CI setup. Our current version of Gitlab is 12.9.0
+The syntax here is valid for a Gitlab CI setup. Our current version of Gitlab is 14.0.0
 
 At Jobtome, we use GCP as our Cloud provider, hence you can imagine a lot of pipelines are related/applicable to GCP. Also, we use three main regions for our services, so you will see a lot of references about that distinction.
 
@@ -70,7 +70,18 @@ my-project
 ...
 ```
 
-### How to use it
+### Underlying versions
+
+Docker:
+- `20.10` for tags > `v3.x.x`;
+- `19.03` for tags <= `v2.39.x`
+
+Terraform:
+- `1` for tags > `v2.39.x`;
+- `0.12.29` for tags <= `v2.38.x`
+
+
+### Index of how-tos
 
 According to the operation / the type of pipeline you have to perform, you can pick here different stages, and put the snippet as indicated in your `.gitlab-ci.yml`:
 
