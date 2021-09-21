@@ -1,6 +1,10 @@
 .docker:
   image: jobtomelabs/dind-bash:20.10
   services: [ "docker:20-dind" ]
+  before_script:
+    - echo "Wait for Docker daemon at tcp://localhost:2375"
+    - while ! nc -z localhost 2375; do sleep 0.1; done # Wait until docker socket is available
+
 
 variables:
   DOCKER_BUILDKIT: 1
