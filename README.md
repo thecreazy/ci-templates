@@ -291,6 +291,20 @@ This is opposed to the 'usual'
 
 NB: when using this flag, remember that the gitlab's registry cleanup policy happens *per-directory* and not *globally* inside a project's registry.
 
+As of version `v3.1.0` we have introduced [this tool](https://github.com/jobtome-labs/docker-registry-cleaner) as helper for cleanup. It works by creating an "environment" (in Gitlab terms) which has an automatical teardown on merge. The teardown stage does cleanup of such directories in the Gitlab container registry.
+To use it, you need to include a new file and add the stages `deploy` and `stop`. Simply add:
+
+```
+include:
+  ...
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/<REF>/docker-registry-cleanup.yml'
+
+stages:
+  ...
+  - deploy
+  - stop
+```
+
 ### Alternative multi-stage build / caching
 
 `.docker:build:multi` template allows building a particular stage of a multi-stage Dockerfile with an optional cache facility. Unlike the other pipeline template, this cache is used within the same pipeline
