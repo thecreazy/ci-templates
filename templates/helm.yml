@@ -136,9 +136,13 @@
 
       chmod 755 /tmp/replacer.sh
 
+      # If it's the First Helm Release, wait 10 minutes for the Ingress to update
+      WAIT="5s"
+      helm status "${APP_NAME}" > /dev/null 2>&1 || WAIT="10m"
+
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
 
-      sleep 5
+      sleep $WAIT
 
       echo
       echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
