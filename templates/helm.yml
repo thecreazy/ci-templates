@@ -129,18 +129,12 @@
       fi
 
     - &helmapply |
-      cat << EOF > /tmp/replacer.sh
-      #!/bin/bash
-      sed 's/name: "${NAMESPACE}"/name: "${APP_NAME}"/g' | sed 's/-tls/-tls-${APP_NAME}/g' | awk '/deployment.yaml|service.yaml|ingress.yaml|configmap.yaml/,/---/'
-      EOF
-
-      chmod 755 /tmp/replacer.sh
 
       # If it's the First Helm Release, wait 10 minutes for the Ingress to update
       WAIT="5s"
       helm status "${APP_NAME}" > /dev/null 2>&1 || WAIT="10m"
 
-      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION} --post-renderer /tmp/replacer.sh --set ingress.ignoreTest=true --set service.ignoreTest=true
+      helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION}
 
       sleep $WAIT
 
