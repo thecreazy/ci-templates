@@ -1,5 +1,5 @@
 publish:calendar:
-  image: linuxbandit/gam:v4.97
+  image: jobtomelabs/gam:v4.97
   stage: notify
   script:
     - |

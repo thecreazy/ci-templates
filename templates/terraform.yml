@@ -6,7 +6,6 @@
     GIT_DEPTH: 1
 
 .terraform-security:
-  image:
-    name: linuxbandit/terraform-with-tfsec:v1.0.0
+  image: jobtomelabs/terraform-with-tfsec:v1.0.0
   variables:
     GIT_DEPTH: 1

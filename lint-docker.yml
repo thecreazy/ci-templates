@@ -1,6 +1,6 @@
 lint:docker:
   stage: lint
-  image: linuxbandit/hadolint-reviewdog:v1.0.0
+  image: jobtomelabs/hadolint-reviewdog:v1.0.0
   script:
     - |
 

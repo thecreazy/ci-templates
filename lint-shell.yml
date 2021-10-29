@@ -1,6 +1,6 @@
 lint:shell:
   stage: lint
-  image: linuxbandit/shellcheck-reviewdog:v1.0.0
+  image: jobtomelabs/shellcheck-reviewdog:v1.0.0
   variables:
     GITLAB_API: ${CI_API_V4_URL}
   script:
