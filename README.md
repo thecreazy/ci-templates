@@ -85,37 +85,43 @@ Terraform:
 
 According to the operation / the type of pipeline you have to perform, you can pick here different stages, and put the snippet as indicated in your `.gitlab-ci.yml`:
 
-- [Linting](#linting)
-- Tests
-  - [Docker-compose tests](#unit-test-stage)
-  - [API tests](#api-test-stage)
-- [Docker pipeline](#docker-pipeline)
-  - Build
-  - Test for image vulnerabilities
-  - Push to registry
-- Kubernetes deployment
-  - [Deploy on quality (a.k.a. staging)](#kubernetes-quality-pipeline)
-  - [Regional deployment](#kubernetes-regional-pipeline)
-  - [Multi-regional deployment](#kubernetes-multiregion-pipeline)
-  - ["Simple script" execution](#kubernetes-"simple-script"-pipeline)
-  - [Note on configmaps](#note-on-configmaps)
-- [Helm deployment](#helm-deployment)
-- [Helm chart publishing](#helm-chart-publishing)
-- [SSH command](#ssh-command)
-- [Publishing on calendar](#publish-to-google-calendar-and-slack)
-- [Google bucket upload](#deploy-to-google-storage)
-- Serverless functions deployment
-  - [Quality deployment](#google-function-quality-pipeline)
-  - [Regional deployment](#google-function-regional-pipeline)
-  - [Multi-regional deployment](#google-function-multiregion-pipeline)
-- [Google endpoint](#google-endpoint)
-- Google cloud run
-  - [Quality pipeline](#google-cloud-run-quality)
-  - [Production pipeline](#google-cloud-run-production)
-- [Google dataflow](#dataflow)
-- [Terraform pipeline](#terraform-pipeline)
-- [Terraform security check](#terraform-security-score)
-- [Notify sentry of release](#notify-sentry-of-release)
+- [Default CI templates](#default-ci-templates)
+  - [Pipeline order and workflow](#pipeline-order-and-workflow)
+    - [Folder structure](#folder-structure)
+    - [Underlying versions](#underlying-versions)
+    - [Index of how-tos](#index-of-how-tos)
+    - [How to use it](#how-to-use-it)
+  - [Linting](#linting)
+    - [Linting shell files](#linting-shell-files)
+    - [Linting python files](#linting-python-files)
+- [Unit test stage](#unit-test-stage)
+- [API test stage](#api-test-stage)
+  - [Docker pipeline](#docker-pipeline)
+    - [Alternative multi-stage build / caching](#alternative-multi-stage-build--caching)
+  - [Kubernetes quality pipeline](#kubernetes-quality-pipeline)
+  - [Kubernetes regional pipeline](#kubernetes-regional-pipeline)
+  - [Kubernetes multiregion pipeline](#kubernetes-multiregion-pipeline)
+    - [Note on configmaps](#note-on-configmaps)
+    - [Note on secrets](#note-on-secrets)
+  - [Kubernetes run script quality](#kubernetes-run-script-quality)
+  - [Kubernetes run script production](#kubernetes-run-script-production)
+  - [Helm deployment](#helm-deployment)
+    - [Helm chart publishing](#helm-chart-publishing)
+  - [SSH command](#ssh-command)
+  - [Publish to Google Calendar and Slack](#publish-to-google-calendar-and-slack)
+  - [Deploy to Google Storage](#deploy-to-google-storage)
+  - [Google function quality pipeline](#google-function-quality-pipeline)
+  - [Google function regional pipeline](#google-function-regional-pipeline)
+  - [Google function multiregion pipeline](#google-function-multiregion-pipeline)
+  - [Google endpoint](#google-endpoint)
+  - [Google Cloud Run Quality](#google-cloud-run-quality)
+  - [Google Cloud Run Production](#google-cloud-run-production)
+  - [Google Dataflow](#google-dataflow)
+  - [Terraform pipeline](#terraform-pipeline)
+  - [Terraform security score](#terraform-security-score)
+  - [Bash script execution](#bash-script-execution)
+  - [Notify sentry of release](#notify-sentry-of-release)
+- [General advices](#general-advices)
 
 Finally some [advice](#general-advices) on how to try the pipeline (for development).
 
@@ -267,7 +273,6 @@ include:
 
 stages:
   - build
-  - test
   - push
 
 variables:
@@ -276,6 +281,8 @@ variables:
   DOCKERFILES_DIR: "docker"
   SKIP_DOCKER_CACHE: "false"
   DOCKER_NAME_CONTAINS_BRANCH: "true" #optional
+  PUBLISH_TARGETS: "lint test"
+  GO_PROXY_URL: "<go-proxy-url>"
 ```
 
 All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). These need to be added to `STAGES` variable. `IMAGES` variable defines the images that will be built, just delete the variable if a single image will be created. In this case the image will be named as `CI_REGISTRY_IMAGE`, othewise `CI_REGISTRY_IMAGE` will be a folder containing `IMAGES`.
@@ -283,11 +290,17 @@ All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). The
 
 This will spawn a job `build` and a job `build:cache`. NOTE: The cache created at pipeline N is used for the pipeline N+1
 
+_NOTE: Both stages, `build` and `push`, should be declared in the CI, in order for this template to work properly. Otherwise, you will get a Syntax Error._
+
 By enabling the flag `DOCKER_NAME_CONTAINS_BRANCH`, every branch built (so, by default, a branch which is undergoing MR) will have its own registry image in the following format:
 `registry.example.com/repo-path/repo-name/branch:tag` or `registry.example.com/repo-path/repo-name/branch/image:tag` (master branch is excluded from this).
 This is opposed to the 'usual'
 `registry.example.com/repo-path/repo-name:tag` or
 `registry.example.com/repo-path/repo-name/image:tag` (where classically, image:={app|nginx})
+
+The `PUBLISH_TARGETS` Flag accepts a list of strings, separated by spaces. Use this Flag to specify a list of Dockerfile Stages to be built and published to the Container Registry. Built and published specified stages will be tagged and available in the registry following the pattern: `registry.example.com/gitlab-org/gitlab-foss/<image>/<target>:<tag>`.
+
+Setting the `GO_PROXY_URL` Flag, will result in using the (Private) Go Proxy at specified URL, while downloading Go Modules for your application (e.g. `go mod download`). It will basically set the `GOPROXY` Environment Variable during the build of image(s).
 
 NB: when using this flag, remember that the gitlab's registry cleanup policy happens *per-directory* and not *globally* inside a project's registry.
 
