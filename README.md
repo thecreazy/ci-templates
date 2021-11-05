@@ -267,7 +267,6 @@ include:
 
 stages:
   - build
-  - test
   - push
 
 variables:
@@ -276,6 +275,8 @@ variables:
   DOCKERFILES_DIR: "docker"
   SKIP_DOCKER_CACHE: "false"
   DOCKER_NAME_CONTAINS_BRANCH: "true" #optional
+  PUBLISH_TARGETS: "lint test"
+  GO_PROXY_URL: "<go-proxy-url>"
 ```
 
 All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). These need to be added to `STAGES` variable. `IMAGES` variable defines the images that will be built, just delete the variable if a single image will be created. In this case the image will be named as `CI_REGISTRY_IMAGE`, othewise `CI_REGISTRY_IMAGE` will be a folder containing `IMAGES`.
@@ -283,11 +284,17 @@ All stages in Docker file should be named (e.g. `AS buildes`, `AS prod`...). The
 
 This will spawn a job `build` and a job `build:cache`. NOTE: The cache created at pipeline N is used for the pipeline N+1
 
+_NOTE: Both stages, `build` and `push`, should be declared in the CI, in order for this template to work properly. Otherwise, you will get a Syntax Error._
+
 By enabling the flag `DOCKER_NAME_CONTAINS_BRANCH`, every branch built (so, by default, a branch which is undergoing MR) will have its own registry image in the following format:
 `registry.example.com/repo-path/repo-name/branch:tag` or `registry.example.com/repo-path/repo-name/branch/image:tag` (master branch is excluded from this).
 This is opposed to the 'usual'
 `registry.example.com/repo-path/repo-name:tag` or
 `registry.example.com/repo-path/repo-name/image:tag` (where classically, image:={app|nginx})
+
+The `PUBLISH_TARGETS` Flag accepts a list of strings, separated by spaces. Use this Flag to specify a list of Dockerfile Stages to be built and published to the Container Registry. Built and published specified stages will be tagged and available in the registry following the pattern: `registry.example.com/gitlab-org/gitlab-foss/<image>/<target>:<tag>`.
+
+Setting the `GO_PROXY_URL` Flag, will result in using the (Private) Go Proxy at specified URL, while downloading Go Modules for your application (e.g. `go mod download`). It will basically set the `GOPROXY` Environment Variable during the build of image(s).
 
 NB: when using this flag, remember that the gitlab's registry cleanup policy happens *per-directory* and not *globally* inside a project's registry.
 

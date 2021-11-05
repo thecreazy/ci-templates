@@ -1,9 +1,9 @@
-lint:go:
+test:unit:go:
   stage: code_quality
-  image: "${APP_LINT_IMAGE}"
+  image: "${APP_TEST_IMAGE}"
 
   script:
-    - golangci-lint --verbose --timeout=5m run ./...
+    - go test ./...
 
   only:
     - /^v.+$/i
@@ -12,5 +12,5 @@ lint:go:
 
   except:
     variables:
-      - $SKIP_CI_LINT == "true"
+      - $SKIP_CI_TEST == "true"
       - $CI_FAST_TRACK == "true"
