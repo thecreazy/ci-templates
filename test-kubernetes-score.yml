@@ -1,6 +1,6 @@
 test:kubernetes-score:
   stage: test
-  image: gdiener/ci-image-gcp:v1.0.1
+  image: jobtomelabs/ci-image-gcp:v1.0.1
   script:
     - |
 
