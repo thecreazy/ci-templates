@@ -1,6 +1,6 @@
 lint:python:
   stage: lint
-  image: linuxbandit/pythonlinter-reviewdog:v1.0.0
+  image: jobtomelabs/pythonlinter-reviewdog:v1.0.0
   script:
     - |
 

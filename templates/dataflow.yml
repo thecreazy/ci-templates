@@ -1,6 +1,6 @@
 .deploy:dataflow:
   stage: deploy
-  image: gdiener/sbt-with-gcloud:v1.0.0
+  image: jobtomelabs/sbt-with-gcloud:v1.0.0
   script:
     - &connection |
       # CLUSTER CONNECTION PHASE
