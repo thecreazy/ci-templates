@@ -1,6 +1,6 @@
 test:unit:go:
   stage: code_quality
-  image: "${APP_TEST_IMAGE}"
+  image: "${CI_REGISTRY_IMAGE}/${APP_TEST_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
 
   script:
     - go test ./...
