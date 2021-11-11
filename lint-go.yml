@@ -1,6 +1,6 @@
 lint:go:
   stage: code_quality
-  image: "${APP_LINT_IMAGE}"
+  image: "${CI_REGISTRY_IMAGE}/${APP_LINT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
 
   script:
     - golangci-lint --verbose --timeout=5m run ./...

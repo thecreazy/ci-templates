@@ -1,5 +1,5 @@
 include:
-  - remote: "https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.3.0/templates/docker.yml"
+  - remote: "https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.3.1/templates/docker.yml"
 
 build:
   stage: build
@@ -139,6 +139,10 @@ build:cache:
           COMMAND_TO_RUN=( docker build --target "${stage}" --cache-from "${CI_REGISTRY_IMAGE}":latest-"${stage}" )
           COMMAND_TO_RUN+=( "${COMMAND_CACHE_FROM[@]}" )
 
+          if [ -n "${GO_PROXY_URL}" ]; then
+            COMMAND_TO_RUN+=( --build-arg "GOPROXY=${GO_PROXY_URL}" )
+          fi
+
           if [ -n "${BUILD_ARGS}" ]; then
             for build_arg in ${BUILD_ARGS}; do
               COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
@@ -171,6 +175,10 @@ build:cache:
             COMMAND_TO_RUN=( docker build --target "${stage}" --cache-from "${CI_REGISTRY_IMAGE}"/"${image}":latest-"${stage}" )
 
             COMMAND_TO_RUN+=( "${COMMAND_CACHE_FROM[@]}" )
+
+            if [ -n "${GO_PROXY_URL}" ]; then
+              COMMAND_TO_RUN+=( --build-arg "GOPROXY=${GO_PROXY_URL}" )
+            fi
 
             if [ -n "${BUILD_ARGS}" ]; then
               for build_arg in ${BUILD_ARGS}; do
@@ -218,6 +226,10 @@ build:latest:
           COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}:latest-${stage}" )
         done
 
+        if [ -n "${GO_PROXY_URL}" ]; then
+          COMMAND_TO_RUN+=( --build-arg "GOPROXY=${GO_PROXY_URL}" )
+        fi
+
         if [ -n "${BUILD_ARGS}" ]; then
           for build_arg in ${BUILD_ARGS}; do
             COMMAND_TO_RUN+=( --build-arg "${build_arg}" )
@@ -241,6 +253,10 @@ build:latest:
           for stage in ${STAGES}; do
             COMMAND_TO_RUN+=( --cache-from "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" )
           done
+
+          if [ -n "${GO_PROXY_URL}" ]; then
+            COMMAND_TO_RUN+=( --build-arg "GOPROXY=${GO_PROXY_URL}" )
+          fi
 
           if [ -n "${BUILD_ARGS}" ]; then
             for build_arg in ${BUILD_ARGS}; do
