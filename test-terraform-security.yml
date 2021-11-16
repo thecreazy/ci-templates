@@ -14,3 +14,7 @@ test:terraform-security:
       terraform --version
       terraform init -backend=false
       tfsec .
+  only:
+    - /^v.+$/i
+    - master
+    - merge_requests
