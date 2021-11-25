@@ -2,10 +2,10 @@
 include:
   - remote: "https://raw.githubusercontent.com/daniel-toncu/ci-templates/feat/python-templates/templates/test-unit.yml"
 
-test:unit:go:
+test:unit:python:
   extends: .test:unit
 
   image: "${CI_REGISTRY_IMAGE}/${APP_TEST_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
 
   script:
-    - go test ./...
+    - pytest
