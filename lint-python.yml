@@ -1,27 +1,11 @@
+---
+include:
+  - remote: "https://raw.githubusercontent.com/daniel-toncu/ci-templates/feat/python-templates/templates/lint.yml"
+
 lint:python:
-  stage: lint
-  image: jobtomelabs/pythonlinter-reviewdog:v1.0.0
+  extends: .lint
+
+  image: "${CI_REGISTRY_IMAGE}/${APP_LINT_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+
   script:
-    - |
-
-      COMMAND_TO_RUN="flake8"
-
-      if [[ -n "${IGNORE_PYTHON_LINT}" ]]; then
-        COMMAND_TO_RUN+=( --ignore=${IGNORE_PYTHON_LINT} )
-      fi
-
-      echo
-      echo "-> Linting code:"
-      echo
-
-      COMMAND_TO_RUN+=( . )
-
-      ${COMMAND_TO_RUN[@]}
-
-      echo
-      echo "-> Code checked!"
-      echo
-  except:
-    variables:
-      - $SKIP_CI_LINT == "true"
-      - $CI_FAST_TRACK == "true"
+    - flake8 --verbose --benchmark
