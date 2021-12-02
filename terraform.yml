@@ -30,6 +30,10 @@ plan:
     - &init |
       terraform init
     - |
+      if [ "${DISABLE_TERRAFORM_REFRESH_STATE}" != "true" ]; then
+        terraform apply -refresh-only -auto-approve
+      fi
+    - |
       TEXT_BOLD="\e[1m" && TEXT_LIGHT_YELLOW="\e[93m" && TEXT_RESET="\e[0m"
 
       terraform plan -out=plan.tfplan | tee operation
