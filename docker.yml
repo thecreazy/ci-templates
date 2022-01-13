@@ -8,8 +8,15 @@ build:
     - &connection |
       # DOCKER LOGIN PHASE
       echo -n "${CI_REGISTRY_PASSWORD}" | docker login -u "${CI_REGISTRY_USER}" --password-stdin "${CI_REGISTRY}"
+
     - |
       # DOCKER BUILD PHASE
+
+      DOCKER_CONTEXT_PATH="."
+
+      if [ -n "${DOCKER_CONTEXT}" ]; then
+        DOCKER_CONTEXT_PATH="$DOCKER_CONTEXT"
+      fi
 
       if [ -z "${IMAGES}" ]; then
 
@@ -44,7 +51,7 @@ build:
 
         PUBLISH_TARGET_BASE_COMMAND_TO_RUN=${COMMAND_TO_RUN[@]}
 
-        COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" . )
+        COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" "${DOCKER_CONTEXT_PATH}" )
 
         "${COMMAND_TO_RUN[@]}"
 
@@ -53,7 +60,7 @@ build:
         if [ -n "${PUBLISH_TARGETS}" ]; then
           for target in ${PUBLISH_TARGETS}; do
             TARGET_IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${target}:${CI_COMMIT_SHORT_SHA}"
-            PUBLISH_TARGET_COMMAND_TO_RUN=( ${PUBLISH_TARGET_BASE_COMMAND_TO_RUN[@]} -t "${TARGET_IMAGE_FULL_NAME}" --target "${target}" . )
+            PUBLISH_TARGET_COMMAND_TO_RUN=( ${PUBLISH_TARGET_BASE_COMMAND_TO_RUN[@]} -t "${TARGET_IMAGE_FULL_NAME}" --target "${target}" "${DOCKER_CONTEXT_PATH}" )
             "${PUBLISH_TARGET_COMMAND_TO_RUN[@]}"
             docker push "${TARGET_IMAGE_FULL_NAME}"
           done
@@ -98,7 +105,7 @@ build:
 
           PUBLISH_TARGET_BASE_COMMAND_TO_RUN=${COMMAND_TO_RUN[@]}
 
-          COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile . )
+          COMMAND_TO_RUN+=( -t "${IMAGE_FULL_NAME}" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile "${DOCKER_CONTEXT_PATH}" )
 
           "${COMMAND_TO_RUN[@]}"
 
@@ -107,7 +114,7 @@ build:
           if [ -n "${PUBLISH_TARGETS}" ]; then
             for target in ${PUBLISH_TARGETS}; do
               TARGET_IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${image}/${target}:${CI_COMMIT_SHORT_SHA}"
-              PUBLISH_TARGET_COMMAND_TO_RUN=( ${PUBLISH_TARGET_BASE_COMMAND_TO_RUN[@]} -t "${TARGET_IMAGE_FULL_NAME}" --target "${target}" -f "./${DOCKERFILES_DIR}/${image}/Dockerfile" . )
+              PUBLISH_TARGET_COMMAND_TO_RUN=( ${PUBLISH_TARGET_BASE_COMMAND_TO_RUN[@]} -t "${TARGET_IMAGE_FULL_NAME}" --target "${target}" -f "./${DOCKERFILES_DIR}/${image}/Dockerfile" "${DOCKER_CONTEXT_PATH}" )
               "${PUBLISH_TARGET_COMMAND_TO_RUN[@]}"
               docker push "${TARGET_IMAGE_FULL_NAME}"
             done
@@ -131,6 +138,12 @@ build:cache:
     - |
       # DOCKER BUILD PHASE
 
+      DOCKER_CONTEXT_PATH="."
+
+      if [ -n "${DOCKER_CONTEXT}" ]; then
+        DOCKER_CONTEXT_PATH="$DOCKER_CONTEXT"
+      fi
+
       if [ -z "${IMAGES}" ]; then
 
         COMMAND_CACHE_FROM=()
@@ -149,7 +162,7 @@ build:cache:
             done
           fi
 
-          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest-"${stage}" --build-arg BUILDKIT_INLINE_CACHE=1 . )
+          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest-"${stage}" --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
 
           "${COMMAND_TO_RUN[@]}" || STATUS=1
 
@@ -186,7 +199,7 @@ build:cache:
               done
             fi
 
-            COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" -f ./"${DOCKERFILES_DIR}"/"${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1  . )
+            COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest-${stage}" -f ./"${DOCKERFILES_DIR}"/"${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
 
             "${COMMAND_TO_RUN[@]}" || STATUS=1
 
@@ -218,6 +231,12 @@ build:latest:
     - |
       # DOCKER BUILD PHASE
 
+      DOCKER_CONTEXT_PATH="."
+
+      if [ -n "${DOCKER_CONTEXT}" ]; then
+        DOCKER_CONTEXT_PATH="$DOCKER_CONTEXT"
+      fi
+
       if [ -z "${IMAGES}" ]; then
 
         COMMAND_TO_RUN+=( docker build --cache-from "${CI_REGISTRY_IMAGE}":latest --cache-from "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}" )
@@ -236,7 +255,7 @@ build:latest:
           done
         fi
 
-        COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest --build-arg BUILDKIT_INLINE_CACHE=1 . )
+        COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
 
         "${COMMAND_TO_RUN[@]}"
 
@@ -264,7 +283,7 @@ build:latest:
             done
           fi
 
-          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 . )
+          COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
 
           "${COMMAND_TO_RUN[@]}"
 
