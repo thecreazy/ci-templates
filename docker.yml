@@ -255,12 +255,27 @@ build:latest:
           done
         fi
 
+        PUBLISH_TARGET_BASE_COMMAND_TO_RUN=${COMMAND_TO_RUN[@]}
+
         COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}":latest --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
 
         "${COMMAND_TO_RUN[@]}"
 
         docker push "${CI_REGISTRY_IMAGE}":latest
+
+        if [ -n "${PUBLISH_TARGETS}" ]; then
+          if [ "${ENABLE_PUBLISH_TARGETS_LATEST}" == "true" ]; then
+            for target in ${PUBLISH_TARGETS}; do
+              TARGET_IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${target}:latest"
+              PUBLISH_TARGET_COMMAND_TO_RUN=( ${PUBLISH_TARGET_BASE_COMMAND_TO_RUN[@]} -t "${TARGET_IMAGE_FULL_NAME}" --target "${target}" --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
+              "${PUBLISH_TARGET_COMMAND_TO_RUN[@]}"
+              docker push "${TARGET_IMAGE_FULL_NAME}"
+            done
+          fi
+        fi
+
       else
+
         if [ -z "${DOCKERFILES_DIR}" ]; then
           DOCKERFILES_DIR=docker
         fi
@@ -283,11 +298,25 @@ build:latest:
             done
           fi
 
+          PUBLISH_TARGET_BASE_COMMAND_TO_RUN=${COMMAND_TO_RUN[@]}
+
           COMMAND_TO_RUN+=( -t "${CI_REGISTRY_IMAGE}/${image}:latest" -f ./"${DOCKERFILES_DIR}/${image}"/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
 
           "${COMMAND_TO_RUN[@]}"
 
           docker push "${CI_REGISTRY_IMAGE}/${image}:latest"
+
+          if [ -n "${PUBLISH_TARGETS}" ]; then
+            if [ "${ENABLE_PUBLISH_TARGETS_LATEST}" == "true" ]; then
+              for target in ${PUBLISH_TARGETS}; do
+                TARGET_IMAGE_FULL_NAME="${CI_REGISTRY_IMAGE}/${image}/${target}:latest"
+                PUBLISH_TARGET_COMMAND_TO_RUN=( ${PUBLISH_TARGET_BASE_COMMAND_TO_RUN[@]} -t "${TARGET_IMAGE_FULL_NAME}" --target "${target}" -f "./${DOCKERFILES_DIR}/${image}/Dockerfile" --build-arg BUILDKIT_INLINE_CACHE=1 "${DOCKER_CONTEXT_PATH}" )
+                "${PUBLISH_TARGET_COMMAND_TO_RUN[@]}"
+                docker push "${TARGET_IMAGE_FULL_NAME}"
+              done
+            fi
+          fi
+
         done
       fi
   only:
@@ -311,11 +340,35 @@ push:
         docker pull "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}"
         docker tag "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_SHORT_SHA}" "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_TAG}"
         docker push "${CI_REGISTRY_IMAGE}":"${CI_COMMIT_TAG}"
+
+        if [ -n "${PUBLISH_TARGETS}" ]; then
+          if [ "${ENABLE_PUBLISH_TARGETS_TAG}" == "true" ]; then
+            for target in ${PUBLISH_TARGETS}; do
+              docker pull "${CI_REGISTRY_IMAGE}/${target}:${CI_COMMIT_SHORT_SHA}"
+              docker tag "${CI_REGISTRY_IMAGE}/${target}:${CI_COMMIT_SHORT_SHA}" "${CI_REGISTRY_IMAGE}/${target}:${CI_COMMIT_TAG}"
+              docker push "${CI_REGISTRY_IMAGE}/${target}:${CI_COMMIT_TAG}"
+            done
+          fi
+        fi
+
       else
+
         for image in ${IMAGES}; do
+
           docker pull "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_SHORT_SHA}"
           docker tag "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_SHORT_SHA}" "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_TAG}"
           docker push "${CI_REGISTRY_IMAGE}"/"${image}":"${CI_COMMIT_TAG}"
+
+          if [ -n "${PUBLISH_TARGETS}" ]; then
+            if [ "${ENABLE_PUBLISH_TARGETS_TAG}" == "true" ]; then
+              for target in ${PUBLISH_TARGETS}; do
+                docker pull "${CI_REGISTRY_IMAGE}/${image}/${target}:${CI_COMMIT_SHORT_SHA}"
+                docker tag "${CI_REGISTRY_IMAGE}/${image}/${target}:${CI_COMMIT_SHORT_SHA}" "${CI_REGISTRY_IMAGE}/${image}/${target}:${CI_COMMIT_TAG}"
+                docker push "${CI_REGISTRY_IMAGE}/${image}/${target}:${CI_COMMIT_TAG}"
+              done
+            fi
+          fi
+
         done
       fi
   variables:
