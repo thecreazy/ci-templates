@@ -53,6 +53,10 @@
         ENVIRONMENT=production
       fi
 
+      if [ -d "${HELM_DIR}/${ENVIRONMENT_NAME}" ]; then 
+        ENVIRONMENT=ENVIRONMENT_NAME
+      fi
+
       if [ -d "${HELM_DIR}/${ENVIRONMENT}" ]; then
         echo
         echo "-> Getting manifests from directory '${ENVIRONMENT}'"
