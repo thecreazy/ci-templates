@@ -1,5 +1,6 @@
+---
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.6/helm-quality.yml'
+  - remote: "https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.6/helm-only-quality.yml"
 
 # EUROPE
 deploy:production:europe:helm:
@@ -19,7 +20,7 @@ deploy:production:europe:helm:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_EUROPE" "CLUSTER_NAME_PRODUCTION_EUROPE" "CLUSTER_ZONE_PRODUCTION_EUROPE"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
@@ -37,7 +38,7 @@ verify:production:europe:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_EUROPE" "CLUSTER_NAME_PRODUCTION_EUROPE" "CLUSTER_ZONE_PRODUCTION_EUROPE" "NAMESPACE_PRODUCTION_EUROPE"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
@@ -64,7 +65,7 @@ deploy:production:america:helm:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_AMERICA" "CLUSTER_NAME_PRODUCTION_AMERICA" "CLUSTER_ZONE_PRODUCTION_AMERICA"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
@@ -82,7 +83,7 @@ verify:production:america:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_AMERICA" "CLUSTER_NAME_PRODUCTION_AMERICA" "CLUSTER_ZONE_PRODUCTION_AMERICA" "NAMESPACE_PRODUCTION_AMERICA"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
@@ -109,7 +110,7 @@ deploy:production:asia:helm:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_ASIA" "CLUSTER_NAME_PRODUCTION_ASIA" "CLUSTER_ZONE_PRODUCTION_ASIA"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
@@ -127,7 +128,7 @@ verify:production:asia:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_ASIA" "CLUSTER_NAME_PRODUCTION_ASIA" "CLUSTER_ZONE_PRODUCTION_ASIA" "NAMESPACE_PRODUCTION_ASIA"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done

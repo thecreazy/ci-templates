@@ -1,6 +1,6 @@
+---
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.6/docker.yml'
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.6/templates/helm.yml'
+  - remote: "https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.6/templates/helm.yml"
 
 deploy:quality:helm:
   variables:
@@ -18,7 +18,7 @@ deploy:quality:helm:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY" "DOMAIN_QUALITY"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
@@ -38,10 +38,9 @@ verify:quality:
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_QUALITY" "CLUSTER_NAME_QUALITY" "CLUSTER_ZONE_QUALITY" "NAMESPACE_QUALITY"; do
           if [ -z "${!var}" ]; then
-            echo "Missing '${var}' variable!"
+            echo "Missing '${var}' Variable!"
             exit 1
           fi
       done
   only:
     - master
-
