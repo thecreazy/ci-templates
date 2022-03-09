@@ -1,5 +1,5 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.7/kubernetes-task-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/diferent-origin/ci-templates/v3.5.8/kubernetes-task-quality.yml'
 
 task:production:europe:
   extends: .task
@@ -9,7 +9,7 @@ task:production:europe:
     CLUSTER_NAME: ${CLUSTER_NAME_PRODUCTION_EUROPE}
     CLUSTER_ZONE: ${CLUSTER_ZONE_PRODUCTION_EUROPE}
     KUBERNETES_SCRIPT: ${KUBERNETES_SCRIPT_PRODUCTION_EUROPE}
-  before_script:
+  before_script
     - |
       # CHECK VARIABLES PHASE
       for var in "GOOGLE_KEY_PRODUCTION_EUROPE" "CLUSTER_NAME_PRODUCTION_EUROPE" "CLUSTER_ZONE_PRODUCTION_EUROPE" "KUBERNETES_SCRIPT_PRODUCTION_EUROPE"; do

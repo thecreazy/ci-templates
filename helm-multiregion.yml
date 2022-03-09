@@ -1,8 +1,8 @@
 include:
-  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.7/helm-quality.yml'
+  - remote: 'https://raw.githubusercontent.com/jobtome-labs/ci-templates/v3.5.8/helm-quality.yml'
 
 # EUROPE
-deploy:production:europe:helm:
+deploy:production:europe:helm
   extends: .deploy:production:helm
   variables:
     GOOGLE_KEY: ${GOOGLE_KEY_PRODUCTION_EUROPE}
