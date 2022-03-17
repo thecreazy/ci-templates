@@ -53,7 +53,7 @@
         ENVIRONMENT=production
       fi
 
-      if [ -d "${HELM_DIR}/${ENVIRONMENT_NAME}" ]; then 
+      if [ -d "${HELM_DIR}/${ENVIRONMENT_NAME}" ]; then
         ENVIRONMENT=${ENVIRONMENT_NAME}
       fi
 
@@ -145,6 +145,26 @@
       echo
       echo "-> App ${APP_NAME} released! Chart version is ${CHART_VERSION}"
       echo
+
+    - &custom-manifests-apply |
+
+      # APPLY CUSTOM MANIFESTS
+
+      if [ -n "${CUSTOM_MANIFESTS_SUBPATH}" ]; then
+
+        CUSTOM_MANIFESTS_PATH="${HELM_DIR}/${ENVIRONMENT}/${CUSTOM_MANIFESTS_SUBPATH}"
+
+        echo
+        echo " *** Applying Custom Kubernetes Manifests at Path \"${CUSTOM_MANIFESTS_PATH}\" ..."
+        echo
+
+        kubectl apply -f "${CUSTOM_MANIFESTS_PATH}"
+
+        echo
+        echo " *** Done."
+        echo
+
+      fi
 
 deploy:quality:helm:
   extends: .helm:deploy
