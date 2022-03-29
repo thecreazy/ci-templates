@@ -1,14 +1,20 @@
+---
 .helm:
-  image: jobtomelabs/helm-sops-mysql:3.2.0
+  image: jobtomelabs/helm:v3.8.1
 
 .helm:deploy:
   extends: .helm
+
   stage: deploy
+
   variables:
     GIT_DEPTH: 1
+
   script:
     - &checkvars |
-      #CHECKING VARIABLES PHASE
+
+      # CHECKING VARIABLES PHASE
+
       for var in "GOOGLE_KEY" "CLUSTER_ZONE" "CLUSTER_NAME" "NAMESPACE" "APP_NAME" "PART_OF" "GOOGLE_PROJECT" "CHARTS_URL" "CHART_NAME"; do
           if [ -z "${!var}" ]; then
             echo
@@ -17,8 +23,10 @@
             exit 1
           fi
       done
+
     - &activate |
-      # ACTIVATION  PHASE
+
+      # ACTIVATION PHASE
 
       echo "${GOOGLE_KEY}" > /tmp/key.json
 
@@ -29,7 +37,9 @@
       echo
       echo "-> Google project '${GOOGLE_PROJECT}' configured!"
       echo
+
     - &connect |
+
       # CLUSTER CONNECTION PHASE
 
       gcloud container clusters get-credentials --zone "${CLUSTER_ZONE}" "${CLUSTER_NAME}"
@@ -43,6 +53,7 @@
       echo
 
     - &environment |
+
       # CHECK PATHS
 
       if [ -z "${HELM_DIR}" ]; then
@@ -79,9 +90,10 @@
           fi
       fi
 
-    - |
+    - &secrets-apply |
+
       # SECRETS APPLICATION
-      # Priority: file in repo, then SECRET_YAML
+      # PRIORITY: File in Repository (if any); Otherwise, SECRET_YAML Variable;
 
       if [ ! -f "${HELM_FILES_PATH}/secrets.yaml" ] && [ -z "${SECRET_YAML}" ]; then
         echo
@@ -114,7 +126,9 @@
       fi
 
     - &helmsetup |
+
       # HELM APPLICATION
+
       helm repo add current-repo "${CHARTS_URL}"
       helm repo update
 
@@ -134,11 +148,19 @@
 
     - &helmapply |
 
-      # If it's the First Helm Release, wait 10 minutes for the Ingress to update
+      # HELM INSTALL / UPGRADE
+      # NOTE: If it's the First Helm Release, Wait 10 minutes for the Ingress to update.
+
       WAIT="5s"
+
       helm status "${APP_NAME}" > /dev/null 2>&1 || WAIT="10m"
 
       helm upgrade --install --atomic "${APP_NAME}" "current-repo/${CHART_NAME}" --wait --timeout "${TIMEOUT}" -f /tmp/values.yaml --namespace "${NAMESPACE}" --version ${CHART_VERSION}
+
+      if [ $WAIT == "10m" ]; then
+        echo "Seems like it's the First Release."
+        echo "Waiting 10 Minutes for the Ingress to update .."
+      fi
 
       sleep $WAIT
 
@@ -260,3 +282,69 @@ deploy:quality:helm:
         echo
         exit 1
       fi
+
+.helm:diff:
+  extends: .helm
+
+  stage: test
+
+  variables:
+    GIT_DEPTH: 1
+
+  script:
+    - *checkvars
+    - *activate
+    - *connect
+    - *environment
+    - *helmsetup
+
+    - |
+
+      # HELM DIFF PLUGIN INSTALLATION
+
+      helm plugin uninstall diff
+
+      helm plugin install https://github.com/databus23/helm-diff --version="v3.4.2"
+
+    - |
+
+      # RUN HELM DIFF
+
+      LAST_RELEASE_IMAGE_TAG=$(helm get values "${APP_NAME}" | yq eval-all ".image.tag" -)
+
+      BASE_COMMAND=( helm diff upgrade "${APP_NAME}" "current-repo/${CHART_NAME}" --version="${CHART_VERSION}" --values="/tmp/values.yaml" --set="image.tag=${LAST_RELEASE_IMAGE_TAG}" --namespace="${NAMESPACE}" --allow-unreleased --normalize-manifests --show-secrets=false )
+
+      COMMAND_DIFF_LONG=( ${BASE_COMMAND[@]} --output=diff )
+      COMMAND_DIFF_SHORT=( ${BASE_COMMAND[@]} --output=diff --context=3 )
+      COMMAND_JSON=( ${BASE_COMMAND[@]} --output=json )
+      COMMAND_SIMPLE=( ${BASE_COMMAND[@]} --output=simple )
+
+      echo
+      echo "---"
+
+      ${COMMAND_DIFF_LONG[@]} > "helm-diff.long"
+
+      echo
+      echo "---"
+
+      ${COMMAND_DIFF_SHORT[@]} | tee "helm-diff.short"
+
+      echo
+      echo "---"
+
+      ${COMMAND_JSON[@]} | tee "helm-diff.json"
+
+      echo
+      echo "---"
+
+      ${COMMAND_SIMPLE[@]} | tee "helm-diff.simple"
+
+      echo
+      echo "---"
+
+  allow_failure: true
+
+  artifacts:
+    name: "${CI_JOB_NAME}@${CI_COMMIT_REF_NAME}"
+    paths:
+      - helm-diff.*
