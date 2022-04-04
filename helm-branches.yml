@@ -1,5 +1,5 @@
 deploy:quality:helm:branches:
-  image: jobtomelabs/helm-sops-mysql:3.2.0
+  image: jobtomelabs/helm:v3.8.1
   stage: deploy
   environment:
     name: review/$CI_BUILD_REF_NAME
@@ -149,7 +149,7 @@ deploy:quality:helm:branches:
       set +e
       BRANCH_VARS=$( tac /tmp/secrets.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
       set -e
-      
+
       # It is assumed that the quality secret cannot be missing in a feature branch
       touch /tmp/secrets-qa.yaml
 
@@ -168,11 +168,11 @@ deploy:quality:helm:branches:
       fi
 
       envsubst < /tmp/secrets-qa.yaml > /tmp/secrets-qa.yaml.tmp && mv /tmp/secrets-qa.yaml.tmp /tmp/secrets-qa.yaml
-      
+
       set +e
       QUALITY_VARS=$( tac /tmp/secrets-qa.yaml | grep -e "DB_USERNAME" -e "DB_PASSWORD" -e "DB_HOST" -e "DB_NAME" -e "DATABASE_URL" | base64)
       set -e
-      
+
     - |
       # Define db operations (three)
       set +e
@@ -296,7 +296,7 @@ deploy:quality:helm:branches:
       - $CI_COMMIT_REF_NAME !~ /^feat/
 
 stop:quality:
-  image: jobtomelabs/helm-sops-mysql:3.2.0
+  image: jobtomelabs/helm:v3.8.1
   allow_failure: true
   environment:
     name: review/$CI_BUILD_REF_NAME
