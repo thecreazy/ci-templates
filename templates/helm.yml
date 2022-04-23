@@ -198,10 +198,24 @@ deploy:quality:helm:
 
 .deploy:production:helm:
   extends: .helm:deploy
+
   only:
     - /^v.+$/i
   except:
     - branches
+
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    url: https://${DOMAIN}
+
+.deploy:internal:helm:
+  extends: .helm:deploy
+
+  only:
+    - /^v.+$/i
+  except:
+    - branches
+
   environment:
     name: ${ENVIRONMENT_NAME}
     url: https://${DOMAIN}
