@@ -7,7 +7,7 @@ import re
 import yaml
 
 from os import walk
-from os.path import isfile, join
+from os.path import isfile, join, relpath
 
 
 ORIGIN = "https://raw.githubusercontent.com/jobtome-labs/ci-templates/"
@@ -128,18 +128,20 @@ def validate(remote_template_link, verbose, test_results):
     return test_results
 
 
-def scan_templates(ci_template_file_paths, verbose):
+def scan_templates(directory_path, ci_template_file_paths, verbose):
     """
     """
 
     results = {}
 
+    git_revisions = []
+
     for template_file_path in ci_template_file_paths:
 
         click.echo(
-            f" === Analyzing CI-Template: \"{template_file_path}\" ..\n") if verbose else None
+            f" === Analyzing CI-Template: \"{relpath(template_file_path, directory_path)}\" ..\n") if verbose else None
 
-        results[template_file_path] = {
+        results[relpath(template_file_path, directory_path)] = {
             "passed": [],
             "failed": []
         }
@@ -149,11 +151,13 @@ def scan_templates(ci_template_file_paths, verbose):
             with open(template_file_path, "r", encoding="utf-8") as f:
                 template = yaml.safe_load(f)
 
-            results[template_file_path]["passed"].append("YAML")
+            results[relpath(template_file_path, directory_path)
+                    ]["passed"].append("YAML")
 
         except yaml.YAMLError as e:
 
-            results[template_file_path]["failed"].append("YAML")
+            results[relpath(template_file_path, directory_path)
+                    ]["failed"].append("YAML")
 
             continue
 
@@ -177,11 +181,12 @@ def scan_templates(ci_template_file_paths, verbose):
             for remote_template_link in remote_template_links:
 
                 click.echo(
-                    f" --- [{index}/{remote_template_links_count}] Validating Remote Template Link: \"{remote_template_link}\" ..") if verbose else None
+                    f" --- [{index}/{remote_template_links_count}] Validating Remote Template Link: \"{relpath(remote_template_link, directory_path)}\" ..") if verbose else None
 
-                results[template_file_path]["remote-template-links"] = {}
+                results[relpath(template_file_path, directory_path)
+                        ]["remote-template-links"] = {}
 
-                results[template_file_path]["remote-template-links"][remote_template_link] = {
+                results[relpath(template_file_path, directory_path)]["remote-template-links"][remote_template_link] = {
                     "passed": [],
                     "failed": []
                 }
@@ -189,11 +194,16 @@ def scan_templates(ci_template_file_paths, verbose):
                 test_results = validate(
                     remote_template_link,
                     verbose,
-                    results[template_file_path]["remote-template-links"][remote_template_link]
+                    results[relpath(template_file_path, directory_path)
+                            ]["remote-template-links"][remote_template_link]
                 )
 
                 click.echo(
-                    f" --- Test Results: {len(test_results['passed'])} Passed and {len(test_results['failed'])} Failed Test Checks: {results[template_file_path]['remote-template-links'][remote_template_link]}.") if verbose else None
+                    f" --- Test Results: {len(test_results['passed'])} Passed and {len(test_results['failed'])} Failed Test Checks: {results[relpath(template_file_path, directory_path)]['remote-template-links'][remote_template_link]}.") if verbose else None
+
+                git_revisions.append(
+                    _extract_git_revision(remote_template_link)
+                )
 
                 click.echo(
                     f" --- [{index}/{remote_template_links_count}] Done.\n") if verbose else None
@@ -206,6 +216,16 @@ def scan_templates(ci_template_file_paths, verbose):
                 " === No Include Statements Found.\n") if verbose >= 2 else None
 
         click.echo(" === Done.\n") if verbose else None
+
+    unique_git_revisions = list(set(git_revisions))
+
+    results = {
+        "results": results,
+        "metadata": {
+            "git-revisions": git_revisions,
+            "unique-git-revisions": unique_git_revisions
+        }
+    }
 
     return results
 
@@ -316,6 +336,8 @@ def scan(origin, current_tag, verbose, directory_path):
     click.echo(
         f" *** Current Version Number (Converted): \"{CURRENT_VERSION_NUMBER}\".") if verbose >= 2 else None
 
+    status_code = 0
+
     click.echo(" *** [1/4] Done.\n")
 
     click.echo(" *** [2/4] Looking for YAML CI-Templates ..")
@@ -331,7 +353,7 @@ def scan(origin, current_tag, verbose, directory_path):
 
     click.echo("") if verbose >= 1 else None
 
-    results = scan_templates(yaml_file_paths, verbose)
+    results = scan_templates(directory_path, yaml_file_paths, verbose)
 
     click.echo(" *** [3/4] Done.\n")
 
@@ -342,10 +364,26 @@ def scan(origin, current_tag, verbose, directory_path):
     click.echo(
         f" *** All Results: {json.dumps(results, indent=True)}\n") if verbose >= 2 else None
 
-    results_failed, failures = filter_failed(results)
+    results_failed, failures = filter_failed(results["results"])
 
-    click.echo(
-        f" *** Failed Results ({failures}): {json.dumps(results_failed, indent=True)}\n")
+    if results_failed:
+
+        status_code = 9
+
+        click.echo(
+            f" *** Failed Results ({failures}): {json.dumps(results_failed, indent=True)}\n")
+
+    if len(results["metadata"]["unique-git-revisions"]) != 1:
+
+        status_code = 8
+
+        click.echo(
+            f" *** FAILURE: Detected Multiple Different Referenced Git Tags in Remote Template Links: {results['metadata']['unique-git-revisions']}.\n")
+
+    if status_code == 0:
+
+        click.echo(
+            f" *** No Failed Results.\n")
 
     click.echo(" *** [4/4] Done.\n")
 
@@ -353,8 +391,8 @@ def scan(origin, current_tag, verbose, directory_path):
 
     click.echo("")
 
-    if results_failed:
-        exit(code=9)
+    if status_code != 0:
+        exit(code=status_code)
 
 
 if __name__ == "__main__":
